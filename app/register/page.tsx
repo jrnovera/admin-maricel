@@ -2,16 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
 import { createClient } from "@/lib/supabase/client";
+import { registerStaff } from "./actions";
 
 const field =
   "w-full rounded-lg border border-pink-200 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-pink-400 disabled:bg-pink-50/50";
 
 function RegisterForm() {
+  const router = useRouter();
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
-  const [done, setDone] = useState<"confirm" | "granted" | null>(null);
+  const [done, setDone] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -19,51 +22,52 @@ function RegisterForm() {
     setPending(true);
 
     const data = new FormData(e.currentTarget);
-    const fullName = String(data.get("fullName")).trim();
     const email = String(data.get("email")).trim();
     const password = String(data.get("password"));
-    const confirmPassword = String(data.get("confirmPassword"));
 
-    if (password !== confirmPassword) {
+    if (password !== String(data.get("confirmPassword"))) {
       setError("Passwords don't match.");
       setPending(false);
       return;
     }
 
+    const result = await registerStaff(data);
+
+    if (!result.ok) {
+      setError(result.error);
+      setPending(false);
+      return;
+    }
+
+    // Role-less accounts have nowhere to land, so only the bootstrap admin is
+    // signed straight in; everyone else waits to be granted access.
+    if (!result.role) {
+      setDone(true);
+      setPending(false);
+      return;
+    }
+
     const supabase = createClient();
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
-      options: { data: { full_name: fullName } },
     });
 
-    if (signUpError) {
-      setError(signUpError.message);
+    if (signInError) {
+      setError(`${signInError.message} — try signing in from the login page.`);
       setPending(false);
       return;
     }
 
-    // Supabase's email-enumeration protection answers a duplicate signup with a
-    // 200 and a decoy user rather than an error. An empty `identities` array is
-    // the only way to tell that apart from a genuine new account — without this
-    // check the person is told to watch for a confirmation email that never comes.
-    if (signUpData.user && signUpData.user.identities?.length === 0) {
-      setError("An account with that email already exists — sign in instead.");
-      setPending(false);
-      return;
-    }
-
-    setDone(signUpData.session ? "granted" : "confirm");
-    setPending(false);
+    router.push("/");
+    router.refresh();
   }
 
   if (done) {
     return (
       <div className="space-y-4 text-center">
         <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          {done === "confirm"
-            ? "Account created — check your email to confirm it, then ask an admin to grant you staff access."
-            : "Account created. Ask an admin to grant you staff access, then sign in."}
+          Account created. Ask an admin to grant you staff access, then sign in.
         </p>
         <Link
           href="/login"

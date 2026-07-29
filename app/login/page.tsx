@@ -9,13 +9,22 @@ import { createClient } from "@/lib/supabase/client";
 const field =
   "w-full rounded-lg border border-pink-200 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-pink-400 disabled:bg-pink-50/50";
 
+// A rejected sign-in and a misconfigured server look identical from the login
+// screen, so each redirect reason gets its own message.
+const REDIRECT_ERRORS: Record<string, string> = {
+  not_staff:
+    "That account isn't registered as MBC staff. Ask an admin to grant you access on the Staff page.",
+  config:
+    "The server is missing its Supabase keys. Add NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY to the deployment's environment variables, then redeploy.",
+  lookup_failed:
+    "Signed in, but the staff profile lookup failed. Check the server's Supabase service-role key and that the profiles table exists.",
+};
+
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const [error, setError] = useState(
-    params.get("error") === "not_staff"
-      ? "That account isn't registered as MBC staff."
-      : ""
+    REDIRECT_ERRORS[params.get("error") ?? ""] ?? ""
   );
   const [pending, setPending] = useState(false);
 
