@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Logo from "@/components/Logo";
 import { createClient } from "@/lib/supabase/client";
@@ -76,6 +77,13 @@ function LoginForm() {
       >
         {pending ? "SIGNING IN…" : "SIGN IN"}
       </button>
+
+      <p className="text-center text-xs text-ink-500">
+        New here?{" "}
+        <Link href="/register" className="font-medium text-pink-500 hover:text-pink-600">
+          Create an account
+        </Link>
+      </p>
     </form>
   );
 }

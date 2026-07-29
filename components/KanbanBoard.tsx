@@ -315,6 +315,7 @@ export default function KanbanBoard({ initial }: { initial: Booking[] }) {
       {/* Desktop: full drag-and-drop kanban. */}
       <div className="hidden lg:block">
         <DndContext
+          id="bookings-board"
           sensors={sensors}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}

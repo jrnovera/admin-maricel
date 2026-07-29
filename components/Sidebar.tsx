@@ -24,7 +24,11 @@ type Item =
   | {
       href: string;
       label: string;
-      Icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
+      Icon: React.ComponentType<{
+        size?: number;
+        strokeWidth?: number;
+        className?: string;
+      }>;
       adminOnly: boolean;
     };
 
