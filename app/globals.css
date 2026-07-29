@@ -1,26 +1,78 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-pink-50: #fdf4f8;
+  --color-pink-100: #fbe6ef;
+  --color-pink-200: #f7cbdf;
+  --color-pink-300: #f0a2c6;
+  --color-pink-400: #e56aa6;
+  --color-pink-500: #e0218a;
+  --color-pink-600: #c2185b;
+  --color-pink-700: #9d1149;
+  --color-pink-800: #7a0d39;
+
+  --color-blush-50: #fffbfa;
+  --color-blush-100: #fdf1ee;
+  --color-blush-200: #f9e3dd;
+
+  --color-ink-900: #2b2730;
+  --color-ink-700: #4a4551;
+  --color-ink-500: #6f6a77;
+
+  --font-display: var(--font-playfair);
+  --font-body: var(--font-poppins);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #ffffff;
+  color: var(--color-ink-900);
+  font-family: var(--font-poppins), system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-playfair), Georgia, serif;
+}
+
+/* Thin pink rule with a small lotus/diamond centre — the section divider
+   used throughout the reference design. */
+.divider-lotus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+.divider-lotus::before,
+.divider-lotus::after {
+  content: "";
+  height: 1px;
+  width: 2.75rem;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-pink-300),
+    transparent
+  );
+}
+.divider-lotus > span {
+  color: var(--color-pink-400);
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+/* Premium surface — soft double shadow + hairline border, Apple-panel style */
+.card-premium {
+  border-radius: 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #ffffff;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 12px 24px -16px rgba(0, 0, 0, 0.14);
+}
+
+.glass-sidebar {
+  background: linear-gradient(180deg, #1c1c1e 0%, #141416 100%);
 }
