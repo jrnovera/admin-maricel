@@ -43,6 +43,16 @@ function RegisterForm() {
       return;
     }
 
+    // Supabase's email-enumeration protection answers a duplicate signup with a
+    // 200 and a decoy user rather than an error. An empty `identities` array is
+    // the only way to tell that apart from a genuine new account — without this
+    // check the person is told to watch for a confirmation email that never comes.
+    if (signUpData.user && signUpData.user.identities?.length === 0) {
+      setError("An account with that email already exists — sign in instead.");
+      setPending(false);
+      return;
+    }
+
     setDone(signUpData.session ? "granted" : "confirm");
     setPending(false);
   }
