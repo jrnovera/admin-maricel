@@ -16,7 +16,7 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "MBC Admin — Maricel Beauty Center",
+  title: "Maricel — Staff Portal",
   description: "Staff portal for Maricel Beauty Center",
 };
 

@@ -40,8 +40,6 @@ export type Booking = {
   status: BookingStatus;
   payment_status: PaymentStatus;
   assigned_therapist_id: string | null;
-  stripe_payment_intent_id: string | null;
-  stripe_session_id: string | null;
   created_at: string;
 };
 
@@ -55,6 +53,63 @@ export type MbcService = {
   sort_order: number;
   is_active: boolean;
 };
+
+export type Enquiry = {
+  id: string;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  subject: string | null;
+  service: string | null;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+};
+
+export type GalleryItem = {
+  id: string;
+  image: string;
+  caption: string;
+  category: string;
+  sort_order: number;
+  is_active: boolean;
+};
+
+export type BlogPost = {
+  id: string;
+  slug: string;
+  category: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  image: string;
+  published_at: string;
+  sort_order: number;
+  is_active: boolean;
+  meta_title: string | null;
+  meta_description: string | null;
+  author: string | null;
+  tags: string[];
+};
+
+export const GALLERY_CATEGORIES = [
+  "Salon Interior",
+  "Hair",
+  "Nails",
+  "Skin Care",
+  "Brows & Lashes",
+  "Makeup",
+  "Spa",
+];
+
+export const BLOG_CATEGORIES = [
+  "Skincare",
+  "Hair Care",
+  "Nail Care",
+  "Brows & Lashes",
+  "Wellness",
+  "Beauty Tips",
+];
 
 export type Staff = {
   id: string;

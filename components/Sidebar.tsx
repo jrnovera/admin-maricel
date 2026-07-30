@@ -11,6 +11,9 @@ import {
   Users,
   UserCog,
   CreditCard,
+  Inbox,
+  Images,
+  Newspaper,
   LogOut,
   Menu,
   X,
@@ -36,6 +39,10 @@ const links: Item[] = [
   { href: "/", label: "Dashboard", Icon: LayoutDashboard, adminOnly: false },
   { href: "/bookings", label: "Bookings", Icon: KanbanSquare, adminOnly: false },
   { href: "/calendar", label: "Calendar", Icon: CalendarDays, adminOnly: false },
+  { href: "/enquiries", label: "Enquiries", Icon: Inbox, adminOnly: false },
+  { section: "Content" },
+  { href: "/gallery", label: "Gallery", Icon: Images, adminOnly: true },
+  { href: "/blog", label: "Blog", Icon: Newspaper, adminOnly: true },
   { section: "Manage" },
   { href: "/services", label: "Services", Icon: Sparkles, adminOnly: true },
   { href: "/customers", label: "Customers", Icon: Users, adminOnly: true },
@@ -126,9 +133,11 @@ export default function Sidebar({
     <>
       {/* Mobile / tablet bar */}
       <div className="glass-sidebar sticky top-0 z-40 flex items-center justify-between px-4 py-3 text-white lg:hidden">
-        <div className="flex items-center gap-2">
-          <Logo variant="mark" className="h-7 w-7" color="#ffffff" />
-          <span className="font-display text-lg font-bold">MBC</span>
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white p-1">
+            <Logo className="h-full w-full" />
+          </span>
+          <span className="font-display text-lg font-bold">Maricel</span>
         </div>
         <button onClick={() => setOpen((o) => !o)} aria-label="Toggle menu">
           {open ? <X size={22} /> : <Menu size={22} />}
@@ -144,11 +153,13 @@ export default function Sidebar({
 
       {/* Desktop sidebar */}
       <aside className="glass-sidebar sticky top-0 hidden min-h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-white/5 p-5 text-white lg:flex">
-        <div className="mb-8 flex items-center gap-2.5">
-          <Logo variant="mark" className="h-10 w-10" color="#ffffff" />
+        <div className="mb-8 flex items-center gap-3">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white p-1.5">
+            <Logo className="h-full w-full" />
+          </span>
           <span className="leading-tight">
-            <span className="block font-display text-xl font-bold">MBC</span>
-            <span className="block text-[8px] tracking-[0.18em] text-white/40">
+            <span className="block font-display text-xl font-bold">Maricel</span>
+            <span className="mt-0.5 block text-[8px] tracking-[0.18em] text-white/40">
               STAFF PORTAL
             </span>
           </span>

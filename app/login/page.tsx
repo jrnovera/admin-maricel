@@ -102,9 +102,13 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-pink-50 via-blush-100 to-pink-100 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <Logo variant="mark" className="mx-auto h-14 w-14" />
-          <p className="mt-3 font-display text-2xl font-bold text-pink-500">MBC</p>
-          <p className="text-[9px] font-medium tracking-[0.25em] text-pink-400">
+          <span className="mx-auto flex h-24 w-24 items-center justify-center rounded-full border border-pink-200 bg-white p-2">
+            <Logo className="h-full w-full" />
+          </span>
+          <p className="mt-4 font-display text-2xl font-bold text-pink-500">
+            Maricel
+          </p>
+          <p className="mt-1 text-[9px] font-medium tracking-[0.25em] text-pink-400">
             STAFF PORTAL
           </p>
         </div>
