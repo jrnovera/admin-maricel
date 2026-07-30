@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   LayoutDashboard,
   KanbanSquare,
@@ -62,8 +62,14 @@ export default function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [lastPath, setLastPath] = useState(pathname);
 
-  useEffect(() => setOpen(false), [pathname]);
+  // Close the drawer on navigation. Adjusted during render rather than in an
+  // effect, so the menu is already closed on the first paint of the new route.
+  if (pathname !== lastPath) {
+    setLastPath(pathname);
+    setOpen(false);
+  }
 
   const visible = links.filter(
     (l) => "section" in l || !l.adminOnly || role === "admin"
@@ -133,12 +139,7 @@ export default function Sidebar({
     <>
       {/* Mobile / tablet bar */}
       <div className="glass-sidebar sticky top-0 z-40 flex items-center justify-between px-4 py-3 text-white lg:hidden">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white p-1">
-            <Logo className="h-full w-full" />
-          </span>
-          <span className="font-display text-lg font-bold">Maricel</span>
-        </div>
+        <Logo variant="white" className="h-6 w-auto" />
         <button onClick={() => setOpen((o) => !o)} aria-label="Toggle menu">
           {open ? <X size={22} /> : <Menu size={22} />}
         </button>
@@ -153,16 +154,13 @@ export default function Sidebar({
 
       {/* Desktop sidebar */}
       <aside className="glass-sidebar sticky top-0 hidden min-h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-white/5 p-5 text-white lg:flex">
-        <div className="mb-8 flex items-center gap-3">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white p-1.5">
-            <Logo className="h-full w-full" />
-          </span>
-          <span className="leading-tight">
-            <span className="block font-display text-xl font-bold">Maricel</span>
-            <span className="mt-0.5 block text-[8px] tracking-[0.18em] text-white/40">
-              STAFF PORTAL
-            </span>
-          </span>
+        {/* Reversed-white lockup: the color logo's pinks lose contrast on
+            this dark glass, so no plate is needed to prop it up. */}
+        <div className="mb-8">
+          <Logo variant="white" className="h-8 w-auto" />
+          <p className="mt-2.5 text-[8px] tracking-[0.18em] text-white/40">
+            STAFF PORTAL
+          </p>
         </div>
 
         {nav}
