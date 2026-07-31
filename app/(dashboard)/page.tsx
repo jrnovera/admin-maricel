@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { format, startOfMonth } from "date-fns";
-import { CalendarCheck, Inbox, Wallet, AlertCircle, ChevronRight } from "lucide-react";
+import { Inbox, MailOpen, CalendarDays, ChevronRight } from "lucide-react";
 import { requireStaff } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { TABLE_MISSING, type Booking } from "@/lib/types";
+import { TABLE_MISSING, type Enquiry } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -30,39 +30,22 @@ function Stat({
 }
 
 export default async function DashboardPage() {
-  const { fullName, role, user } = await requireStaff();
+  const { fullName } = await requireStaff();
   const supabase = createAdminClient();
 
-  const today = format(new Date(), "yyyy-MM-dd");
   const monthStart = format(startOfMonth(new Date()), "yyyy-MM-dd");
 
   const { data, error } = await supabase
-    .from("mbc_bookings")
+    .from("mbc_enquiries")
     .select("*")
-    .order("booking_date", { ascending: false });
+    .order("created_at", { ascending: false });
 
   const needsMigration = error ? TABLE_MISSING.has(error.code) : false;
-  let bookings = (data ?? []) as Booking[];
+  const enquiries = (data ?? []) as Enquiry[];
 
-  if (role === "therapist") {
-    bookings = bookings.filter(
-      (b) => b.assigned_therapist_id === user.id || b.assigned_therapist_id === null
-    );
-  }
-
-  const todays = bookings.filter((b) => b.booking_date === today);
-  const enquiries = bookings.filter((b) => b.status === "pending");
-  const monthRevenue = bookings
-    .filter((b) => b.booking_date >= monthStart && b.payment_status === "paid")
-    .reduce((sum, b) => sum + Number(b.amount ?? 0), 0);
-  const outstanding = bookings.filter(
-    (b) => b.status !== "cancelled" && b.payment_status !== "paid"
-  );
-
-  const upcoming = bookings
-    .filter((b) => b.booking_date >= today && b.status !== "cancelled")
-    .sort((a, b) => a.booking_date.localeCompare(b.booking_date))
-    .slice(0, 6);
+  const unread = enquiries.filter((e) => !e.is_read);
+  const thisMonth = enquiries.filter((e) => e.created_at >= monthStart);
+  const recent = enquiries.slice(0, 6);
 
   return (
     <div>
@@ -76,57 +59,54 @@ export default async function DashboardPage() {
       {needsMigration && (
         <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           The MBC tables aren&apos;t set up yet. Run{" "}
-          <code>supabase/migrations/0001_mbc.sql</code> and{" "}
-          <code>0002_mbc_admin.sql</code> in Supabase.
+          <code>supabase/migrations/0004_mbc_enquiries.sql</code> in Supabase.
         </div>
       )}
 
-      <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Stat label="Today's Bookings" value={String(todays.length)} Icon={CalendarCheck} />
-        <Stat label="Open Enquiries" value={String(enquiries.length)} Icon={Inbox} />
-        <Stat
-          label="Revenue This Month"
-          value={`AED ${monthRevenue.toLocaleString()}`}
-          Icon={Wallet}
-        />
-        <Stat label="Awaiting Payment" value={String(outstanding.length)} Icon={AlertCircle} />
+      <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-3">
+        <Stat label="Total Enquiries" value={String(enquiries.length)} Icon={Inbox} />
+        <Stat label="Unread" value={String(unread.length)} Icon={MailOpen} />
+        <Stat label="This Month" value={String(thisMonth.length)} Icon={CalendarDays} />
       </div>
 
       <div className="mt-8 card-premium">
         <div className="flex items-center justify-between border-b border-black/[0.06] px-5 py-4">
-          <h2 className="font-display text-lg text-ink-900">Upcoming</h2>
+          <h2 className="font-display text-lg text-ink-900">Recent Enquiries</h2>
           <Link
-            href="/bookings"
+            href="/enquiries"
             className="flex items-center gap-1 text-xs font-medium text-pink-500 hover:text-pink-600"
           >
-            All bookings <ChevronRight size={14} />
+            All enquiries <ChevronRight size={14} />
           </Link>
         </div>
 
-        {upcoming.length === 0 ? (
+        {recent.length === 0 ? (
           <p className="px-5 py-10 text-center text-sm text-ink-500">
-            No upcoming appointments.
+            No enquiries yet.
           </p>
         ) : (
           <ul className="divide-y divide-pink-50">
-            {upcoming.map((b) => (
+            {recent.map((e) => (
               <li
-                key={b.id}
+                key={e.id}
                 className="flex items-center justify-between gap-4 px-5 py-3.5"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-ink-900">
-                    {b.full_name}
+                    {e.full_name}
+                    {!e.is_read && (
+                      <span className="ml-2 rounded-full bg-pink-100 px-2 py-0.5 text-[10px] font-medium text-pink-600">
+                        New
+                      </span>
+                    )}
                   </p>
-                  <p className="truncate text-xs text-ink-500">{b.service_label}</p>
+                  <p className="truncate text-xs text-ink-500">
+                    {e.subject || e.service || e.message}
+                  </p>
                 </div>
                 <div className="shrink-0 text-right">
                   <p className="text-xs text-ink-700">
-                    {format(new Date(`${b.booking_date}T00:00:00`), "d MMM")} ·{" "}
-                    {b.time_slot}
-                  </p>
-                  <p className="text-xs text-pink-500">
-                    AED {Number(b.amount).toLocaleString()}
+                    {format(new Date(e.created_at), "d MMM")}
                   </p>
                 </div>
               </li>

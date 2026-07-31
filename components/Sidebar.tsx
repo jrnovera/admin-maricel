@@ -5,14 +5,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   LayoutDashboard,
-  KanbanSquare,
-  CalendarDays,
   Sparkles,
-  Users,
   UserCog,
-  CreditCard,
   Inbox,
   Images,
+  Image,
   Newspaper,
   LogOut,
   Menu,
@@ -37,17 +34,14 @@ type Item =
 
 const links: Item[] = [
   { href: "/", label: "Dashboard", Icon: LayoutDashboard, adminOnly: false },
-  { href: "/bookings", label: "Bookings", Icon: KanbanSquare, adminOnly: false },
-  { href: "/calendar", label: "Calendar", Icon: CalendarDays, adminOnly: false },
   { href: "/enquiries", label: "Enquiries", Icon: Inbox, adminOnly: false },
   { section: "Content" },
+  { href: "/hero-images", label: "Hero Images", Icon: Image, adminOnly: true },
   { href: "/gallery", label: "Gallery", Icon: Images, adminOnly: true },
   { href: "/blog", label: "Blog", Icon: Newspaper, adminOnly: true },
   { section: "Manage" },
   { href: "/services", label: "Services", Icon: Sparkles, adminOnly: true },
-  { href: "/customers", label: "Customers", Icon: Users, adminOnly: true },
   { href: "/staff", label: "Staff", Icon: UserCog, adminOnly: true },
-  { href: "/payments", label: "Payments", Icon: CreditCard, adminOnly: true },
 ];
 
 export default function Sidebar({

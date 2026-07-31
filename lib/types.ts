@@ -1,48 +1,3 @@
-export const BOOKING_STATUSES = [
-  "pending",
-  "confirmed",
-  "in_progress",
-  "completed",
-  "cancelled",
-] as const;
-
-export type BookingStatus = (typeof BOOKING_STATUSES)[number];
-
-export const STATUS_LABEL: Record<BookingStatus, string> = {
-  pending: "Enquiries",
-  confirmed: "Confirmed",
-  in_progress: "In Progress",
-  completed: "Completed",
-  cancelled: "Cancelled",
-};
-
-export const PAYMENT_STATUSES = [
-  "unpaid",
-  "partial",
-  "paid",
-  "refunded",
-] as const;
-
-export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
-
-export type Booking = {
-  id: string;
-  user_id: string | null;
-  service_id: string | null;
-  full_name: string;
-  phone: string;
-  email: string | null;
-  service_label: string;
-  booking_date: string;
-  time_slot: string;
-  notes: string | null;
-  amount: number;
-  status: BookingStatus;
-  payment_status: PaymentStatus;
-  assigned_therapist_id: string | null;
-  created_at: string;
-};
-
 export type MbcService = {
   id: string;
   category: string;
@@ -126,6 +81,30 @@ export const SERVICE_CATEGORIES = [
   "Makeup & Styling",
   "Body & Massage",
 ];
+
+export type HeroImage = {
+  id: string;
+  page_key: string;
+  sort_order: number;
+  eyebrow: string | null;
+  title_lead: string;
+  title_accent: string | null;
+  body: string | null;
+  image: string;
+  is_active: boolean;
+};
+
+export const HERO_PAGES = [
+  { key: "home", label: "Home", multi: true },
+  { key: "about", label: "About Us", multi: false },
+  { key: "services", label: "Services", multi: false },
+  { key: "packages", label: "Packages", multi: false },
+  { key: "our-team", label: "Our Team", multi: false },
+  { key: "careers", label: "Careers", multi: false },
+  { key: "gallery", label: "Gallery", multi: false },
+  { key: "blog", label: "Blog", multi: false },
+  { key: "contact", label: "Contact", multi: false },
+] as const;
 
 // PostgREST reports a missing/uncached table as PGRST205 rather than passing
 // through Postgres's raw 42P01.
