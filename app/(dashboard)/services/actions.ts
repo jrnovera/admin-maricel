@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { revalidateSitePath } from "@/lib/revalidateSite";
 
 export async function saveService(formData: FormData) {
   await requireAdmin();
@@ -38,6 +39,7 @@ export async function saveService(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/services");
+  revalidateSitePath("/services");
 }
 
 export async function deleteService(id: string) {
@@ -48,4 +50,5 @@ export async function deleteService(id: string) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/services");
+  revalidateSitePath("/services");
 }

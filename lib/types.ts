@@ -119,6 +119,7 @@ export const HERO_PAGES = [
   { key: "about", label: "About Us", multi: false },
   { key: "services", label: "Services", multi: false },
   { key: "packages", label: "Packages", multi: false },
+  { key: "book-appointment", label: "Book Appointment", multi: false },
   { key: "our-team", label: "Our Team", multi: false },
   { key: "careers", label: "Careers", multi: false },
   { key: "gallery", label: "Gallery", multi: false },

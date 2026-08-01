@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { uploadImage } from "@/lib/upload";
+import { revalidateSitePath } from "@/lib/revalidateSite";
 
 function slugify(value: string) {
   return value
@@ -73,6 +74,9 @@ export async function saveBlogPost(formData: FormData) {
   }
 
   revalidatePath("/blog");
+  revalidatePath(`/blog/${slug}`);
+  revalidateSitePath("/blog");
+  revalidateSitePath(`/blog/${slug}`);
 }
 
 export async function deleteBlogPost(id: string) {
@@ -85,4 +89,5 @@ export async function deleteBlogPost(id: string) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/blog");
+  revalidateSitePath("/blog");
 }

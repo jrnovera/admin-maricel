@@ -61,7 +61,7 @@ function cards(
 const ctaSection = (
   title: string,
   subtitle: string,
-  button = "Enquire Now"
+  button = "Book Appointment"
 ): ContentSection => ({
   key: "cta",
   label: "Closing Banner",
@@ -336,7 +336,7 @@ export const PAGE_CONTENT: Record<string, ContentSection[]> = {
     ctaSection(
       "Ready to look and feel your best?",
       "Send us an enquiry today and let our experts pamper you with the care you deserve.",
-      "ENQUIRE NOW"
+      "BOOK NOW"
     ),
   ],
 
@@ -417,6 +417,92 @@ export const PAGE_CONTENT: Record<string, ContentSection[]> = {
       "Enquire about your favorite package today and let us take care of you.",
       "Enquire About a Package"
     ),
+  ],
+
+  "book-appointment": [
+    {
+      key: "intro",
+      label: "Ready To Book Card",
+      hint: "The white card just below the hero. The button itself isn't editable — there's no booking system wired up yet.",
+      fields: [
+        {
+          key: "intro.title",
+          label: "Title",
+          placeholder: "Ready to book?",
+        },
+        {
+          key: "intro.body",
+          label: "Paragraph",
+          placeholder: "Click the button below to open our booking page.",
+        },
+      ],
+    },
+    {
+      key: "steps",
+      label: "How To Book",
+      hint: "The 3-step row explaining how booking works.",
+      fields: [
+        {
+          key: "steps.heading",
+          label: "Small Heading",
+          placeholder: "HOW TO BOOK",
+        },
+        ...cards("steps", [
+          {
+            title: "Choose your service",
+            desc: "Browse our services and pick what you need.",
+          },
+          {
+            title: "Select your preferred schedule",
+            desc: "Pick the date and time that works best for you.",
+          },
+          {
+            title: "Confirm your booking",
+            desc: "Review your details and confirm your appointment.",
+          },
+        ]),
+      ],
+    },
+    {
+      key: "help",
+      label: "Need Help Booking Band",
+      fields: [
+        {
+          key: "help.title",
+          label: "Title",
+          placeholder: "Need help booking?",
+        },
+        {
+          key: "help.body",
+          label: "Paragraph",
+          placeholder: "Our team is happy to assist you. Get in touch with us and we'll be glad to help.",
+        },
+      ],
+    },
+    {
+      key: "closing",
+      label: "Closing Banner",
+      hint: "The pink box at the very bottom of the page.",
+      fields: [
+        {
+          key: "closing.title",
+          label: "Title",
+          placeholder: "Your Beauty, Your Time.",
+        },
+        {
+          key: "closing.subtitle",
+          label: "Subtitle",
+          placeholder: "We'll Take Care of the Rest.",
+        },
+        {
+          key: "closing.body",
+          label: "Paragraph",
+          placeholder:
+            "Book your appointment today and enjoy a luxurious experience made just for you.",
+          multiline: true,
+        },
+      ],
+    },
   ],
 
   contact: [
@@ -564,7 +650,7 @@ export const PAGE_CONTENT: Record<string, ContentSection[]> = {
         {
           key: "closing.button1",
           label: "Main Button Text",
-          placeholder: "Enquire Now",
+          placeholder: "Book Now",
         },
         {
           key: "closing.button2",

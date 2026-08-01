@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { uploadImage } from "@/lib/upload";
+import { revalidateSitePath } from "@/lib/revalidateSite";
 
 export async function saveGalleryItem(formData: FormData) {
   await requireAdmin();
@@ -39,6 +40,7 @@ export async function saveGalleryItem(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/gallery");
+  revalidateSitePath("/gallery");
 }
 
 export async function deleteGalleryItem(id: string) {
@@ -51,4 +53,5 @@ export async function deleteGalleryItem(id: string) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/gallery");
+  revalidateSitePath("/gallery");
 }

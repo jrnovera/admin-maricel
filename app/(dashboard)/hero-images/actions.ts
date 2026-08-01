@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { uploadImage } from "@/lib/upload";
 import { sectionsFor } from "@/lib/content-schema";
+import { revalidateSitePath } from "@/lib/revalidateSite";
 
 function publicPath(pageKey: string) {
   return pageKey === "home" ? "/" : `/${pageKey}`;
@@ -51,6 +52,7 @@ export async function savePageContent(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath(publicPath(pageKey));
+  revalidateSitePath(publicPath(pageKey));
 }
 
 export async function saveHeroImage(formData: FormData) {
@@ -98,6 +100,7 @@ export async function saveHeroImage(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath(publicPath(pageKey));
+  revalidateSitePath(publicPath(pageKey));
 }
 
 /**
@@ -136,6 +139,7 @@ export async function addHeroSlidesBulk(formData: FormData) {
   const { error } = await supabase.from("mbc_hero_images").insert(rows);
   if (error) throw new Error(error.message);
   revalidatePath(publicPath(pageKey));
+  revalidateSitePath(publicPath(pageKey));
 }
 
 export async function deleteHeroImage(id: string, pageKey: string) {
@@ -148,6 +152,7 @@ export async function deleteHeroImage(id: string, pageKey: string) {
 
   if (error) throw new Error(error.message);
   revalidatePath(publicPath(pageKey));
+  revalidateSitePath(publicPath(pageKey));
 }
 
 export async function reorderHeroImages(
@@ -166,4 +171,5 @@ export async function reorderHeroImages(
   }
 
   revalidatePath(publicPath(pageKey));
+  revalidateSitePath(publicPath(pageKey));
 }

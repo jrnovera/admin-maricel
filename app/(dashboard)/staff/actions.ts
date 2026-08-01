@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { uploadImage } from "@/lib/upload";
+import { revalidateSitePath } from "@/lib/revalidateSite";
 
 export async function setStaffRole(
   userId: string,
@@ -30,7 +31,8 @@ export async function setStaffRole(
   }
 
   revalidatePath("/staff");
-  revalidatePath("/");
+  revalidatePath("/our-team");
+  revalidateSitePath("/our-team");
 }
 
 /**
@@ -89,7 +91,8 @@ export async function addStaffByEmail(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/staff");
-  revalidatePath("/");
+  revalidatePath("/our-team");
+  revalidateSitePath("/our-team");
 }
 
 /** Edits the public-facing profile (photo, title, bio, visibility) for an existing staff member. */
@@ -128,5 +131,6 @@ export async function updateStaffProfile(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/staff");
-  revalidatePath("/");
+  revalidatePath("/our-team");
+  revalidateSitePath("/our-team");
 }
