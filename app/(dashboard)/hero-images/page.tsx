@@ -1,32 +1,29 @@
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import HeroImagesManager from "@/components/HeroImagesManager";
-import { TABLE_MISSING, type HeroImage } from "@/lib/types";
+import { TABLE_MISSING, HERO_PAGES } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function HeroImagesPage() {
   await requireAdmin();
 
-  const { data, error } = await createAdminClient()
+  const { error } = await createAdminClient()
     .from("mbc_hero_images")
-    .select(
-      "id, page_key, sort_order, eyebrow, title_lead, title_accent, body, image, is_active"
-    )
-    .order("page_key", { ascending: true })
-    .order("sort_order", { ascending: true });
+    .select("page_key")
+    .limit(1);
 
   const needsMigration = error ? TABLE_MISSING.has(error.code) : false;
-  const rows = (data ?? []) as HeroImage[];
 
   return (
     <div>
       <h1 className="font-display text-2xl text-ink-900 sm:text-3xl">
-        Hero Images
+        Pages
       </h1>
       <p className="mb-6 mt-1 text-sm text-ink-500">
-        Manage the banner photo and headline shown at the top of each public
-        page. Home supports multiple slides; every other page shows one.
+        Select a page to customize its banner photo and headline. Home
+        supports multiple slides; every other page shows one.
       </p>
 
       {needsMigration && (
@@ -42,7 +39,19 @@ export default async function HeroImagesPage() {
         </p>
       )}
 
-      <HeroImagesManager rows={rows} />
+      <ul className="flex flex-col gap-2">
+        {HERO_PAGES.map((p) => (
+          <li key={p.key}>
+            <Link
+              href={`/hero-images/${p.key}`}
+              className="card-premium flex items-center justify-between gap-3 px-4 py-3.5 text-sm font-medium text-ink-900 transition-colors hover:bg-pink-50/60"
+            >
+              <span>{p.label}</span>
+              <ChevronRight size={16} className="text-ink-500" />
+            </Link>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

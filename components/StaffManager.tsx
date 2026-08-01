@@ -1,8 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { UserPlus, X } from "lucide-react";
-import { setStaffRole, addStaffByEmail } from "@/app/(dashboard)/staff/actions";
+import { Fragment, useState, useTransition } from "react";
+import { UserPlus, X, Pencil, Upload } from "lucide-react";
+import {
+  setStaffRole,
+  addStaffByEmail,
+  updateStaffProfile,
+} from "@/app/(dashboard)/staff/actions";
+import { TEAM_CATEGORIES } from "@/lib/types";
 
 const field =
   "w-full rounded-lg border border-black/10 bg-white px-3 py-2.5 text-sm outline-none focus:border-pink-400 disabled:bg-pink-50/50";
@@ -13,7 +18,218 @@ export type StaffRow = {
   email: string;
   full_name: string | null;
   role: "admin" | "therapist";
+  photo_url: string | null;
+  display_role: string | null;
+  bio: string | null;
+  show_on_site: boolean;
+  sort_order: number;
+  team_categories: string[];
 };
+
+/** Shared photo/title/bio/visibility fields used by both the add and edit forms. */
+function ProfileFields({
+  defaults,
+  pending,
+}: {
+  defaults?: Pick<
+    StaffRow,
+    | "photo_url"
+    | "display_role"
+    | "bio"
+    | "show_on_site"
+    | "sort_order"
+    | "team_categories"
+  >;
+  pending: boolean;
+}) {
+  const [preview, setPreview] = useState(defaults?.photo_url ?? "");
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    setPreview(file ? URL.createObjectURL(file) : defaults?.photo_url ?? "");
+  }
+
+  return (
+    <>
+      <div className="flex flex-wrap items-start gap-5">
+        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-black/10 bg-black/[0.02]">
+          {preview ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={preview} alt="Preview" className="h-full w-full object-cover" />
+          ) : (
+            <span className="flex h-full items-center justify-center text-[10px] text-ink-500">
+              No photo
+            </span>
+          )}
+        </div>
+        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-pink-300 px-4 py-3 text-sm text-pink-500 hover:bg-pink-50">
+          <Upload size={16} />
+          {defaults?.photo_url ? "Replace photo" : "Choose photo"}
+          <input
+            type="file"
+            name="file"
+            accept="image/jpeg,image/png,image/webp,image/avif"
+            onChange={handleFile}
+            disabled={pending}
+            className="hidden"
+          />
+        </label>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className={label}>PUBLIC TITLE (e.g. Massage Therapist)</label>
+          <input
+            name="displayRole"
+            defaultValue={defaults?.display_role ?? ""}
+            disabled={pending}
+            className={field}
+          />
+        </div>
+        <div>
+          <label className={label}>SORT ORDER</label>
+          <input
+            name="sortOrder"
+            type="number"
+            defaultValue={defaults?.sort_order ?? 0}
+            disabled={pending}
+            className={field}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className={label}>BIO (OPTIONAL)</label>
+        <textarea
+          name="bio"
+          rows={2}
+          defaultValue={defaults?.bio ?? ""}
+          disabled={pending}
+          className={field}
+        />
+      </div>
+
+      <div>
+        <label className={label}>
+          OUR TEAM SECTION(S) — pick one or more
+        </label>
+        <div className="flex flex-wrap gap-x-5 gap-y-2">
+          {TEAM_CATEGORIES.map((cat) => (
+            <label
+              key={cat}
+              className="flex items-center gap-2 text-sm text-ink-700"
+            >
+              <input
+                type="checkbox"
+                name="teamCategories"
+                value={cat}
+                defaultChecked={defaults?.team_categories?.includes(cat) ?? false}
+                disabled={pending}
+                className="h-4 w-4 accent-pink-500"
+              />
+              {cat}
+            </label>
+          ))}
+        </div>
+        <p className="mt-1.5 text-xs text-ink-500">
+          Which group(s) they&apos;re listed under on the Our Team page — e.g. a
+          nail tech who also does massage can be both Beauty Specialist and
+          Therapist.
+        </p>
+      </div>
+
+      <label className="flex items-center gap-2 text-sm text-ink-700">
+        <input
+          type="checkbox"
+          name="showOnSite"
+          defaultChecked={defaults?.show_on_site ?? false}
+          disabled={pending}
+          className="h-4 w-4 accent-pink-500"
+        />
+        Show on the public Our Team page
+      </label>
+    </>
+  );
+}
+
+function EditProfileForm({
+  staff,
+  onDone,
+}: {
+  staff: StaffRow;
+  onDone: () => void;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState("");
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError("");
+    const formData = new FormData(e.currentTarget);
+
+    startTransition(async () => {
+      try {
+        await updateStaffProfile(formData);
+        onDone();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not save profile");
+      }
+    });
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="col-span-full space-y-4 rounded-xl border border-black/10 bg-blush-50/40 p-5"
+    >
+      <div className="flex items-center justify-between">
+        <h3 className="font-display text-base text-ink-900">
+          Public Profile — {staff.full_name || staff.email}
+        </h3>
+        <button type="button" onClick={onDone} className="text-ink-500">
+          <X size={18} />
+        </button>
+      </div>
+
+      {error && (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
+      )}
+
+      <input type="hidden" name="id" value={staff.id} />
+      <div>
+        <label className={label}>FULL NAME</label>
+        <input
+          name="fullName"
+          defaultValue={staff.full_name ?? ""}
+          disabled={pending}
+          className={field}
+        />
+      </div>
+
+      <ProfileFields
+        defaults={{
+          photo_url: staff.photo_url,
+          display_role: staff.display_role,
+          bio: staff.bio,
+          show_on_site: staff.show_on_site,
+          sort_order: staff.sort_order,
+          team_categories: staff.team_categories,
+        }}
+        pending={pending}
+      />
+
+      <button
+        type="submit"
+        disabled={pending}
+        className="rounded-full bg-pink-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-pink-600 disabled:opacity-60"
+      >
+        {pending ? "SAVING…" : "Save Profile"}
+      </button>
+    </form>
+  );
+}
 
 export default function StaffManager({
   staff,
@@ -23,6 +239,7 @@ export default function StaffManager({
   currentUserId: string;
 }) {
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -107,6 +324,15 @@ export default function StaffManager({
             <input name="fullName" disabled={pending} className={field} />
           </div>
 
+          <div className="border-t border-black/[0.06] pt-4">
+            <p className="mb-3 text-xs font-semibold tracking-[0.1em] text-ink-500">
+              PUBLIC OUR TEAM PROFILE (OPTIONAL)
+            </p>
+            <div className="space-y-4">
+              <ProfileFields pending={pending} />
+            </div>
+          </div>
+
           <button
             type="submit"
             disabled={pending}
@@ -124,47 +350,112 @@ export default function StaffManager({
               <th className="px-4 py-3 font-semibold">NAME</th>
               <th className="px-4 py-3 font-semibold">EMAIL</th>
               <th className="px-4 py-3 font-semibold">ROLE</th>
-              <th className="px-4 py-3 text-right font-semibold">ACCESS</th>
+              <th className="px-4 py-3 font-semibold">TEAM SECTION(S)</th>
+              <th className="px-4 py-3 font-semibold">ON SITE</th>
+              <th className="px-4 py-3 text-right font-semibold">ACTIONS</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-pink-50">
             {staff.map((s) => {
               const isSelf = s.id === currentUserId;
               return (
-                <tr key={s.id}>
-                  <td className="px-4 py-3 font-medium text-ink-900">
-                    {s.full_name || "—"}
-                    {isSelf && <span className="ml-2 text-xs text-pink-500">(you)</span>}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-ink-500">{s.email}</td>
-                  <td className="px-4 py-3">
-                    <select
-                      value={s.role}
-                      disabled={pending || isSelf}
-                      onChange={(e) =>
-                        changeRole(s.id, e.target.value as "admin" | "therapist")
-                      }
-                      className="rounded-lg border border-black/10 bg-white px-2 py-1.5 text-xs outline-none focus:border-pink-400 disabled:opacity-60"
-                    >
-                      <option value="therapist">Therapist</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {!isSelf && (
-                      <button
-                        disabled={pending}
-                        onClick={() => {
-                          if (!confirm(`Remove ${s.full_name || s.email} from staff?`)) return;
-                          changeRole(s.id, null);
-                        }}
-                        className="text-xs text-red-600 hover:text-red-800"
+                <Fragment key={s.id}>
+                  <tr>
+                    <td className="px-4 py-3 font-medium text-ink-900">
+                      <span className="flex items-center gap-2">
+                        {s.photo_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={s.photo_url}
+                            alt=""
+                            className="h-7 w-7 shrink-0 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-pink-50 text-[10px] text-pink-400">
+                            {(s.full_name || s.email).slice(0, 1).toUpperCase()}
+                          </span>
+                        )}
+                        {s.full_name || "—"}
+                      </span>
+                      {isSelf && <span className="ml-2 text-xs text-pink-500">(you)</span>}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-ink-500">{s.email}</td>
+                    <td className="px-4 py-3">
+                      <select
+                        value={s.role}
+                        disabled={pending || isSelf}
+                        onChange={(e) =>
+                          changeRole(s.id, e.target.value as "admin" | "therapist")
+                        }
+                        className="rounded-lg border border-black/10 bg-white px-2 py-1.5 text-xs outline-none focus:border-pink-400 disabled:opacity-60"
                       >
-                        Revoke
-                      </button>
-                    )}
-                  </td>
-                </tr>
+                        <option value="therapist">Therapist</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </td>
+                    <td className="px-4 py-3">
+                      {s.team_categories.length > 0 ? (
+                        <span className="flex flex-wrap gap-1">
+                          {s.team_categories.map((cat) => (
+                            <span
+                              key={cat}
+                              className="rounded-full bg-pink-50 px-2 py-0.5 text-[11px] font-medium text-pink-600"
+                            >
+                              {cat}
+                            </span>
+                          ))}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-ink-500">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {s.show_on_site ? (
+                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                          Visible
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-black/[0.04] px-2 py-0.5 text-[11px] text-ink-500">
+                          Hidden
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span className="flex items-center justify-end gap-4">
+                        <button
+                          onClick={() =>
+                            setEditingId(editingId === s.id ? null : s.id)
+                          }
+                          className="flex items-center gap-1 text-xs font-medium text-ink-500 hover:text-pink-500"
+                        >
+                          <Pencil size={12} /> Profile
+                        </button>
+                        {!isSelf && (
+                          <button
+                            disabled={pending}
+                            onClick={() => {
+                              if (!confirm(`Remove ${s.full_name || s.email} from staff?`)) return;
+                              changeRole(s.id, null);
+                            }}
+                            className="text-xs text-red-600 hover:text-red-800"
+                          >
+                            Revoke
+                          </button>
+                        )}
+                      </span>
+                    </td>
+                  </tr>
+                  {editingId === s.id && (
+                    <tr>
+                      <td colSpan={6} className="bg-black/[0.015] p-4">
+                        <EditProfileForm
+                          staff={s}
+                          onDone={() => setEditingId(null)}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               );
             })}
           </tbody>

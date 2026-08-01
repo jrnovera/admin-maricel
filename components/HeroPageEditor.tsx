@@ -1,13 +1,23 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Pencil, Trash2, X, Upload, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Upload,
+  Images,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import {
   saveHeroImage,
   deleteHeroImage,
   reorderHeroImages,
+  addHeroSlidesBulk,
 } from "@/app/(dashboard)/hero-images/actions";
-import { HERO_PAGES, type HeroImage } from "@/lib/types";
+import type { HeroImage } from "@/lib/types";
 
 const field =
   "w-full rounded-lg border border-black/10 bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-pink-400 disabled:bg-pink-50/50";
@@ -16,12 +26,10 @@ const label = "mb-1.5 block text-xs font-semibold tracking-[0.1em] text-ink-900"
 function HeroForm({
   pageKey,
   item,
-  showSortOrder,
   onDone,
 }: {
   pageKey: string;
   item: HeroImage | null;
-  showSortOrder: boolean;
   onDone: () => void;
 }) {
   const [pending, startTransition] = useTransition();
@@ -70,6 +78,9 @@ function HeroForm({
 
       <input type="hidden" name="pageKey" value={pageKey} />
       {item && <input type="hidden" name="id" value={item.id} />}
+      {item && (
+        <input type="hidden" name="sortOrder" value={item.sort_order} />
+      )}
       <input type="hidden" name="image" value={item?.image ?? ""} />
 
       <div className="flex flex-wrap items-start gap-5">
@@ -103,29 +114,18 @@ function HeroForm({
         </label>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className={label}>EYEBROW</label>
-          <input
-            name="eyebrow"
-            defaultValue={item?.eyebrow ?? ""}
-            disabled={pending}
-            className={field}
-            placeholder="Welcome to"
-          />
-        </div>
-        {showSortOrder && (
-          <div>
-            <label className={label}>SORT ORDER</label>
-            <input
-              name="sortOrder"
-              type="number"
-              defaultValue={item?.sort_order ?? 0}
-              disabled={pending}
-              className={field}
-            />
-          </div>
-        )}
+      <div>
+        <label className={label}>SMALL HEADING</label>
+        <input
+          name="eyebrow"
+          defaultValue={item?.eyebrow ?? ""}
+          disabled={pending}
+          className={field}
+          placeholder="Welcome to"
+        />
+        <p className="mt-1 text-xs text-ink-500">
+          The short line of text above the big title.
+        </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -141,7 +141,7 @@ function HeroForm({
           />
         </div>
         <div>
-          <label className={label}>TITLE ACCENT (pink)</label>
+          <label className={label}>HIGHLIGHTED PART OF TITLE</label>
           <input
             name="titleAccent"
             defaultValue={item?.title_accent ?? ""}
@@ -149,11 +149,12 @@ function HeroForm({
             className={field}
             placeholder="Tailored For You"
           />
+          <p className="mt-1 text-xs text-ink-500">Shown in pink.</p>
         </div>
       </div>
 
       <div>
-        <label className={label}>BODY</label>
+        <label className={label}>PARAGRAPH</label>
         <textarea
           name="body"
           rows={3}
@@ -185,7 +186,69 @@ function HeroForm({
   );
 }
 
-function PageSection({
+/** Picks several photos at once and turns each into its own carousel slide,
+ *  so a 3-photo carousel doesn't mean using "Add Slide" three times. */
+function BulkUploadButton({
+  pageKey,
+  onDone,
+}: {
+  pageKey: string;
+  onDone: () => void;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState("");
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setError("");
+    const formData = new FormData();
+    formData.set("pageKey", pageKey);
+    Array.from(files).forEach((f) => formData.append("files", f));
+    // Cleared right away so picking the same file(s) again still fires change.
+    e.target.value = "";
+
+    startTransition(async () => {
+      try {
+        await addHeroSlidesBulk(formData);
+        onDone();
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Could not upload images"
+        );
+      }
+    });
+  }
+
+  return (
+    <>
+      <label
+        className={`flex items-center gap-2 rounded-full border border-pink-300 px-5 py-2.5 text-sm font-medium text-pink-500 transition-colors hover:bg-pink-50 ${
+          pending ? "cursor-wait opacity-60" : "cursor-pointer"
+        }`}
+      >
+        <Images size={16} />
+        {pending ? "Uploading…" : "Upload Multiple Photos"}
+        <input
+          type="file"
+          multiple
+          accept="image/jpeg,image/png,image/webp,image/avif"
+          onChange={handleChange}
+          disabled={pending}
+          className="hidden"
+        />
+      </label>
+      {error && (
+        <p className="mt-2 w-full rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
+      )}
+    </>
+  );
+}
+
+export default function HeroPageEditor({
   pageKey,
   label: pageLabel,
   multi,
@@ -219,22 +282,43 @@ function PageSection({
 
   return (
     <section className="mb-10">
-      <h2 className="mb-3 font-display text-lg text-ink-900">{pageLabel}</h2>
+      <div className="mb-3 flex items-center gap-2">
+        <h2 className="font-display text-lg text-ink-900">{pageLabel}</h2>
+        {multi && sorted.length > 0 && (
+          <span className="rounded-full bg-black/[0.05] px-2 py-0.5 text-[11px] font-medium text-ink-500">
+            {sorted.length} slide{sorted.length === 1 ? "" : "s"}
+          </span>
+        )}
+      </div>
 
       {!showForm && (multi || sorted.length === 0) && (
-        <button
-          onClick={() => setCreating(true)}
-          className="mb-4 flex items-center gap-2 rounded-full bg-pink-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-pink-600"
-        >
-          <Plus size={16} /> {multi ? "Add Slide" : "Set Up Hero Image"}
-        </button>
+        <div className="mb-1.5 flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setCreating(true)}
+            className="flex items-center gap-2 rounded-full bg-pink-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-pink-600"
+          >
+            <Plus size={16} /> {multi ? "Add One Slide" : "Set Up Hero Image"}
+          </button>
+          {multi && (
+            <>
+              <span className="text-xs text-ink-500">or</span>
+              <BulkUploadButton pageKey={pageKey} onDone={() => {}} />
+            </>
+          )}
+        </div>
+      )}
+
+      {!showForm && multi && (
+        <p className="mb-4 text-xs text-ink-500">
+          Uploading multiple photos turns each one into its own carousel
+          slide — add the headline for each afterward.
+        </p>
       )}
 
       {showForm && (
         <HeroForm
           pageKey={pageKey}
           item={editing}
-          showSortOrder={multi}
           onDone={() => {
             setCreating(false);
             setEditing(null);
@@ -338,21 +422,5 @@ function PageSection({
         </div>
       )}
     </section>
-  );
-}
-
-export default function HeroImagesManager({ rows }: { rows: HeroImage[] }) {
-  return (
-    <div>
-      {HERO_PAGES.map((p) => (
-        <PageSection
-          key={p.key}
-          pageKey={p.key}
-          label={p.label}
-          multi={p.multi}
-          items={rows.filter((r) => r.page_key === p.key)}
-        />
-      ))}
-    </div>
   );
 }

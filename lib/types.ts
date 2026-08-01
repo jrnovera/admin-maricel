@@ -70,7 +70,27 @@ export type Staff = {
   id: string;
   full_name: string | null;
   role: "admin" | "therapist" | null;
+  photo_url: string | null;
+  display_role: string | null;
+  bio: string | null;
+  show_on_site: boolean;
+  sort_order: number;
+  team_categories: string[];
 };
+
+/**
+ * Which Our Team section(s) a staff member appears in on the public site.
+ * Separate from `role` above, which is portal login permission (admin vs
+ * therapist access) and must stay a single value — this is just branding,
+ * and someone can carry two or three of these at once (e.g. a nail tech who
+ * also does massage is both Beauty Specialist and Therapist).
+ */
+export const TEAM_CATEGORIES = [
+  "Therapist",
+  "Beauty Specialist",
+  "Support Team",
+  "Admin",
+] as const;
 
 export const SERVICE_CATEGORIES = [
   "Hair Services",
@@ -104,6 +124,7 @@ export const HERO_PAGES = [
   { key: "gallery", label: "Gallery", multi: false },
   { key: "blog", label: "Blog", multi: false },
   { key: "contact", label: "Contact", multi: false },
+  { key: "reviews", label: "Reviews", multi: false },
 ] as const;
 
 // PostgREST reports a missing/uncached table as PGRST205 rather than passing

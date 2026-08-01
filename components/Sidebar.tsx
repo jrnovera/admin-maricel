@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import Logo from "@/components/Logo";
+import NotificationBell from "@/components/NotificationBell";
 import { createClient } from "@/lib/supabase/client";
 import type { StaffRole } from "@/lib/auth";
 
@@ -36,7 +37,7 @@ const links: Item[] = [
   { href: "/", label: "Dashboard", Icon: LayoutDashboard, adminOnly: false },
   { href: "/enquiries", label: "Enquiries", Icon: Inbox, adminOnly: false },
   { section: "Content" },
-  { href: "/hero-images", label: "Hero Images", Icon: Image, adminOnly: true },
+  { href: "/hero-images", label: "Pages", Icon: Image, adminOnly: true },
   { href: "/gallery", label: "Gallery", Icon: Images, adminOnly: true },
   { href: "/blog", label: "Blog", Icon: Newspaper, adminOnly: true },
   { section: "Manage" },
@@ -48,10 +49,12 @@ export default function Sidebar({
   role,
   fullName,
   email,
+  unreadCount,
 }: {
   role: StaffRole;
   fullName: string | null;
   email: string;
+  unreadCount: number;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -134,13 +137,16 @@ export default function Sidebar({
       {/* Mobile / tablet bar */}
       <div className="glass-sidebar sticky top-0 z-40 flex items-center justify-between px-4 py-3 text-white lg:hidden">
         <Logo variant="white" className="h-6 w-auto" />
-        <button onClick={() => setOpen((o) => !o)} aria-label="Toggle menu">
-          {open ? <X size={22} /> : <Menu size={22} />}
-        </button>
+        <div className="flex items-center gap-1">
+          <NotificationBell unreadCount={unreadCount} />
+          <button onClick={() => setOpen((o) => !o)} aria-label="Toggle menu">
+            {open ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
       </div>
 
       {open && (
-        <div className="glass-sidebar max-h-[calc(100vh-3.5rem)] overflow-y-auto px-4 pb-4 text-white lg:hidden">
+        <div className="glass-sidebar fixed inset-x-0 top-14 z-40 max-h-[calc(100vh-3.5rem)] overflow-y-auto px-4 pb-4 text-white shadow-lg lg:hidden">
           {nav}
           <div className="mt-4">{footer}</div>
         </div>
@@ -150,11 +156,14 @@ export default function Sidebar({
       <aside className="glass-sidebar sticky top-0 hidden min-h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-white/5 p-5 text-white lg:flex">
         {/* Reversed-white lockup: the color logo's pinks lose contrast on
             this dark glass, so no plate is needed to prop it up. */}
-        <div className="mb-8">
-          <Logo variant="white" className="h-8 w-auto" />
-          <p className="mt-2.5 text-[8px] tracking-[0.18em] text-white/40">
-            STAFF PORTAL
-          </p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <Logo variant="white" className="h-8 w-auto" />
+            <p className="mt-2.5 text-[8px] tracking-[0.18em] text-white/40">
+              STAFF PORTAL
+            </p>
+          </div>
+          <NotificationBell unreadCount={unreadCount} />
         </div>
 
         {nav}
