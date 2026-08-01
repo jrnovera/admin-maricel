@@ -8,6 +8,7 @@ import {
   deleteGalleryItem,
 } from "@/app/(dashboard)/gallery/actions";
 import { GALLERY_CATEGORIES, type GalleryItem } from "@/lib/types";
+import Modal from "@/components/Modal";
 
 const field =
   "w-full rounded-lg border border-black/10 bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-pink-400 disabled:bg-pink-50/50";
@@ -47,7 +48,7 @@ function ItemForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="mb-6 space-y-4 rounded-xl border border-black/10 bg-white p-5"
+      className="space-y-4 rounded-xl bg-white p-5"
     >
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg text-ink-900">
@@ -167,25 +168,24 @@ export default function GalleryManager({ items }: { items: GalleryItem[] }) {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const closeForm = () => {
+    setCreating(false);
+    setEditing(null);
+  };
+
   return (
     <div>
-      {!creating && !editing && (
-        <button
-          onClick={() => setCreating(true)}
-          className="mb-6 flex items-center gap-2 rounded-full bg-pink-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-pink-600"
-        >
-          <Plus size={16} /> Upload Photo
-        </button>
-      )}
+      <button
+        onClick={() => setCreating(true)}
+        className="mb-6 flex items-center gap-2 rounded-full bg-pink-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-pink-600"
+      >
+        <Plus size={16} /> Upload Photo
+      </button>
 
       {(creating || editing) && (
-        <ItemForm
-          item={editing}
-          onDone={() => {
-            setCreating(false);
-            setEditing(null);
-          }}
-        />
+        <Modal onClose={closeForm}>
+          <ItemForm item={editing} onDone={closeForm} />
+        </Modal>
       )}
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

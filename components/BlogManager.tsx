@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { Plus, Pencil, Trash2, X, Upload } from "lucide-react";
 import { saveBlogPost, deleteBlogPost } from "@/app/(dashboard)/blog/actions";
 import { BLOG_CATEGORIES, type BlogPost } from "@/lib/types";
+import Modal from "@/components/Modal";
 
 const field =
   "w-full rounded-lg border border-black/10 bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-pink-400 disabled:bg-pink-50/50";
@@ -50,7 +51,7 @@ function PostForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="mb-6 space-y-5 rounded-xl border border-black/10 bg-white p-5"
+      className="space-y-5 rounded-xl bg-white p-5"
     >
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg text-ink-900">
@@ -301,25 +302,24 @@ export default function BlogManager({ posts }: { posts: BlogPost[] }) {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const closeForm = () => {
+    setCreating(false);
+    setEditing(null);
+  };
+
   return (
     <div>
-      {!creating && !editing && (
-        <button
-          onClick={() => setCreating(true)}
-          className="mb-6 flex items-center gap-2 rounded-full bg-pink-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-pink-600"
-        >
-          <Plus size={16} /> New Post
-        </button>
-      )}
+      <button
+        onClick={() => setCreating(true)}
+        className="mb-6 flex items-center gap-2 rounded-full bg-pink-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-pink-600"
+      >
+        <Plus size={16} /> New Post
+      </button>
 
       {(creating || editing) && (
-        <PostForm
-          post={editing}
-          onDone={() => {
-            setCreating(false);
-            setEditing(null);
-          }}
-        />
+        <Modal onClose={closeForm} maxWidth="max-w-2xl">
+          <PostForm post={editing} onDone={closeForm} />
+        </Modal>
       )}
 
       <div className="space-y-3">

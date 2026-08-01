@@ -102,6 +102,35 @@ export const SERVICE_CATEGORIES = [
   "Body & Massage",
 ];
 
+export type MbcPackage = {
+  id: string;
+  name: string;
+  icon: string;
+  includes: string[];
+  duration: string;
+  price: number;
+  price_label: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
+
+// Keep in sync with the icon set drawn in maricel-beauty-center/components/ServiceIcon.tsx
+export const PACKAGE_ICONS = [
+  "hair",
+  "skin",
+  "nails",
+  "lashes",
+  "waxing",
+  "makeup",
+  "lotus",
+  "sparkle",
+  "hygiene",
+  "hands",
+  "bottle",
+  "heart",
+  "crown",
+] as const;
+
 export type HeroImage = {
   id: string;
   page_key: string;

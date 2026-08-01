@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   LayoutDashboard,
   Sparkles,
+  Package,
   UserCog,
   Inbox,
   Images,
@@ -42,6 +43,7 @@ const links: Item[] = [
   { href: "/blog", label: "Blog", Icon: Newspaper, adminOnly: true },
   { section: "Manage" },
   { href: "/services", label: "Services", Icon: Sparkles, adminOnly: true },
+  { href: "/packages", label: "Packages", Icon: Package, adminOnly: true },
   { href: "/staff", label: "Staff", Icon: UserCog, adminOnly: true },
 ];
 

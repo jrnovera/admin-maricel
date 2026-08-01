@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import { saveService, deleteService } from "@/app/(dashboard)/services/actions";
 import { SERVICE_CATEGORIES, type MbcService } from "@/lib/types";
+import Modal from "@/components/Modal";
 
 const field =
   "w-full rounded-lg border border-black/10 bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-pink-400 disabled:bg-pink-50/50";
@@ -37,7 +38,7 @@ function ServiceForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="mb-6 space-y-4 rounded-xl border border-black/10 bg-white p-5"
+      className="space-y-4 rounded-xl bg-white p-5"
     >
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg text-ink-900">
@@ -158,25 +159,24 @@ export default function ServiceManager({ services }: { services: MbcService[] })
     return acc;
   }, {});
 
+  const closeForm = () => {
+    setCreating(false);
+    setEditing(null);
+  };
+
   return (
     <div>
-      {!creating && !editing && (
-        <button
-          onClick={() => setCreating(true)}
-          className="mb-6 flex items-center gap-2 rounded-full bg-pink-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-pink-600"
-        >
-          <Plus size={16} /> New Service
-        </button>
-      )}
+      <button
+        onClick={() => setCreating(true)}
+        className="mb-6 flex items-center gap-2 rounded-full bg-pink-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-pink-600"
+      >
+        <Plus size={16} /> New Service
+      </button>
 
       {(creating || editing) && (
-        <ServiceForm
-          service={editing}
-          onDone={() => {
-            setCreating(false);
-            setEditing(null);
-          }}
-        />
+        <Modal onClose={closeForm}>
+          <ServiceForm service={editing} onDone={closeForm} />
+        </Modal>
       )}
 
       {Object.entries(byCategory).map(([category, items]) => (
