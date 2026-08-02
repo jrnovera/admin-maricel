@@ -84,7 +84,6 @@ function Field({
       {f.multiline ? (
         <textarea
           id={f.key}
-          name={`f:${f.key}`}
           rows={3}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -95,7 +94,6 @@ function Field({
       ) : (
         <input
           id={f.key}
-          name={`f:${f.key}`}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={pending}
@@ -244,8 +242,6 @@ function ImageField({
         )}
 
         {error && <p className="mt-1.5 text-[11px] text-red-600">{error}</p>}
-
-        <input type="hidden" name={`f:${f.key}`} value={value} />
       </div>
     </div>
   );
@@ -302,7 +298,6 @@ function CardGroupBox({
           </label>
           <input
             id={group.title.key}
-            name={`f:${group.title.key}`}
             value={titleValue}
             onChange={(e) => set(group.title.key, e.target.value)}
             disabled={pending}
@@ -316,7 +311,6 @@ function CardGroupBox({
           </label>
           <textarea
             id={group.desc.key}
-            name={`f:${group.desc.key}`}
             rows={2}
             value={descValue}
             onChange={(e) => set(group.desc.key, e.target.value)}
@@ -484,7 +478,15 @@ export default function PageContentEditor({
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
-    const formData = new FormData(e.currentTarget);
+
+    // Built from `draft`, never from the form's DOM: collapsed sections are
+    // unmounted, so `new FormData(form)` would omit their inputs and the save
+    // would blank every field the editor happens not to be showing.
+    const formData = new FormData();
+    formData.set("pageKey", pageKey);
+    for (const f of sections.flatMap((s) => s.fields)) {
+      formData.set(`f:${f.key}`, draft[f.key] ?? "");
+    }
 
     startTransition(async () => {
       try {
@@ -498,8 +500,6 @@ export default function PageContentEditor({
 
   return (
     <form onSubmit={handleSubmit} className="mb-10">
-      <input type="hidden" name="pageKey" value={pageKey} />
-
       <div className="sticky top-0 z-10 mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-black/5 bg-white/90 py-3 backdrop-blur">
         <div>
           <h2 className="font-display text-lg text-ink-900">Page Content</h2>

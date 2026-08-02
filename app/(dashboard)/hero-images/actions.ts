@@ -36,15 +36,20 @@ export async function savePageContent(formData: FormData) {
   const pageKey = String(formData.get("pageKey") ?? "").trim();
   if (!pageKey) throw new Error("Page is required");
 
+  // Only fields the form actually sent are written. A field that is absent
+  // means "not being edited" — writing it as "" would silently reset copy the
+  // editor never showed, which is how a partial submit turns into data loss.
   const fields = sectionsFor(pageKey).flatMap((s) => s.fields);
-  if (fields.length === 0) return;
+  const rows = fields
+    .filter((f) => formData.has(`f:${f.key}`))
+    .map((f) => ({
+      page_key: pageKey,
+      field_key: f.key,
+      value: String(formData.get(`f:${f.key}`) ?? "").trim(),
+      updated_at: new Date().toISOString(),
+    }));
 
-  const rows = fields.map((f) => ({
-    page_key: pageKey,
-    field_key: f.key,
-    value: String(formData.get(`f:${f.key}`) ?? "").trim(),
-    updated_at: new Date().toISOString(),
-  }));
+  if (rows.length === 0) return;
 
   const { error } = await createAdminClient()
     .from("mbc_page_content")

@@ -82,6 +82,13 @@ export default async function HeroPagePage({
           Run <code>supabase/migrations/0008_mbc_page_content.sql</code> in
           Supabase to edit the rest of this page&apos;s copy.
         </div>
+      ) : sections.length === 0 ? (
+        // Otherwise the editor renders nothing at all and the page reads as
+        // broken rather than as "the banner is all there is to edit here".
+        <div className="mb-10 rounded-xl border border-black/10 bg-white px-5 py-4 text-sm text-ink-500">
+          Only the banner above is editable on the {page.label} page. Ask your
+          developer if you need to change the wording further down it.
+        </div>
       ) : (
         <PageContentEditor
           pageKey={page.key}

@@ -87,7 +87,10 @@ export type Staff = {
  */
 export const TEAM_CATEGORIES = [
   "Therapist",
+  "Beauty Therapist",
   "Beauty Specialist",
+  "Hairstylist",
+  "Nail Technician",
   "Support Team",
   "Admin",
 ] as const;
@@ -148,7 +151,8 @@ export const HERO_PAGES = [
   { key: "about", label: "About Us", multi: false },
   { key: "services", label: "Services", multi: false },
   { key: "packages", label: "Packages", multi: false },
-  { key: "book-appointment", label: "Book Appointment", multi: false },
+  // No "book-appointment" entry: the site has no such route. Its copy lives on
+  // the Services page ("Ready to book" / "How to book" / "Need help booking").
   { key: "our-team", label: "Our Team", multi: false },
   { key: "careers", label: "Careers", multi: false },
   { key: "gallery", label: "Gallery", multi: false },
