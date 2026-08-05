@@ -134,6 +134,32 @@ export const PACKAGE_ICONS = [
   "crown",
 ] as const;
 
+export type MbcPointItem = {
+  id: string;
+  group_id: string;
+  name: string;
+  points: number;
+  sort_order: number;
+};
+
+export type MbcPointGroup = {
+  id: string;
+  slug: string;
+  title: string;
+  icon: string;
+  note: string | null;
+  sort_order: number;
+  is_active: boolean;
+  mbc_point_items: MbcPointItem[];
+};
+
+export type MbcRedemptionTier = {
+  id: string;
+  price: string;
+  points: number;
+  sort_order: number;
+};
+
 export type HeroImage = {
   id: string;
   page_key: string;

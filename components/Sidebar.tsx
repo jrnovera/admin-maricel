@@ -12,6 +12,7 @@ import {
   Images,
   Image,
   Newspaper,
+  Star,
   LogOut,
   Menu,
   X,
@@ -44,6 +45,7 @@ const links: Item[] = [
   { section: "Manage" },
   { href: "/services", label: "Services", Icon: Sparkles, adminOnly: true },
   { href: "/packages", label: "Packages", Icon: Package, adminOnly: true },
+  { href: "/point-system", label: "Point System", Icon: Star, adminOnly: true },
   { href: "/staff", label: "Staff", Icon: UserCog, adminOnly: true },
 ];
 
