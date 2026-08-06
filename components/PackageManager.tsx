@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import { savePackage, deletePackage } from "@/app/(dashboard)/packages/actions";
 import { PACKAGE_ICONS, type MbcPackage } from "@/lib/types";
+import Modal from "@/components/Modal";
 
 const field =
   "w-full rounded-lg border border-black/10 bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-pink-400 disabled:bg-pink-50/50";
@@ -37,7 +38,7 @@ function PackageForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="mb-6 space-y-4 rounded-xl border border-black/10 bg-white p-5"
+      className="space-y-4 rounded-xl bg-white p-5"
     >
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg text-ink-900">
@@ -179,13 +180,20 @@ export default function PackageManager({ packages }: { packages: MbcPackage[] })
       )}
 
       {(creating || editing) && (
-        <PackageForm
-          pkg={editing}
-          onDone={() => {
+        <Modal
+          onClose={() => {
             setCreating(false);
             setEditing(null);
           }}
-        />
+        >
+          <PackageForm
+            pkg={editing}
+            onDone={() => {
+              setCreating(false);
+              setEditing(null);
+            }}
+          />
+        </Modal>
       )}
 
       <div className="overflow-hidden card-premium">

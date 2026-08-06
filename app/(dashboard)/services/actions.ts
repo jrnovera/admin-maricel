@@ -5,50 +5,147 @@ import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidateSitePath } from "@/lib/revalidateSite";
 
-export async function saveService(formData: FormData) {
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+/**
+ * Each line is "Service name | price" — the last "|" splits name from price.
+ * A bare number ("250") is a fixed price the site renders as "AED 250";
+ * anything else ("From AED 25") is kept verbatim as the price label, with the
+ * first number in it stored as the sortable numeric price.
+ */
+function parseItems(text: string) {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line, i) => {
+      const idx = line.lastIndexOf("|");
+      if (idx === -1) {
+        throw new Error(`Line "${line}" is missing a "|" before the price`);
+      }
+      const name = line.slice(0, idx).trim();
+      const raw = line.slice(idx + 1).trim();
+      if (!name) throw new Error(`Line "${line}" is missing a service name`);
+
+      const isPlainNumber = /^[\d.]+$/.test(raw);
+      const price = parseFloat(isPlainNumber ? raw : raw.replace(/[^\d.]/g, ""));
+      if (Number.isNaN(price)) {
+        throw new Error(`Line "${line}" has an invalid price`);
+      }
+
+      return {
+        name,
+        price,
+        price_label: isPlainNumber ? null : raw,
+        sort_order: i + 1,
+        is_active: true,
+      };
+    });
+}
+
+/** Both public surfaces that render the price list. */
+function revalidateEverywhere() {
+  revalidatePath("/services");
+  revalidateSitePath("/services");
+  // The home page's service grid renders the first six groups.
+  revalidateSitePath("/");
+}
+
+export async function saveServiceGroup(formData: FormData) {
   await requireAdmin();
   const supabase = createAdminClient();
 
   const get = (k: string) => String(formData.get(k) ?? "").trim();
 
   const id = get("id");
-  const name = get("name");
-  const category = get("category");
-  const price = parseFloat(get("price"));
-  const duration = parseInt(get("durationMinutes") || "60", 10);
+  const title = get("title");
+  const slug = slugify(get("slug") || title);
+  const icon = get("icon") || "sparkle";
+  const blurb = get("blurb") || null;
+  const note = get("note") || null;
+  const sortOrder = parseInt(get("sortOrder") || "0", 10);
+  const isActive = formData.get("isActive") === "on";
+  const items = parseItems(get("itemsText"));
 
-  if (!name || !category || Number.isNaN(price)) {
-    throw new Error("Name, category and price are required");
-  }
+  if (!title) throw new Error("Title is required");
+  if (!slug) throw new Error("Could not build a URL slug from that title");
+  if (items.length === 0) throw new Error("List at least one service");
 
   const row = {
-    name,
-    category,
-    price,
-    // Only set when the price is a floor ("From AED 25"), otherwise the
-    // formatted price is derived from `price` at render time.
-    price_label: get("priceLabel") || null,
-    duration_minutes: Number.isNaN(duration) ? 60 : duration,
-    sort_order: parseInt(get("sortOrder") || "0", 10),
-    is_active: formData.get("isActive") === "on",
+    slug,
+    title,
+    icon,
+    blurb,
+    note,
+    sort_order: Number.isNaN(sortOrder) ? 0 : sortOrder,
+    is_active: isActive,
   };
 
-  const { error } = id
-    ? await supabase.from("mbc_services").update(row).eq("id", id)
-    : await supabase.from("mbc_services").insert(row);
+  let groupId = id;
+  if (id) {
+    const { error } = await supabase
+      .from("mbc_service_groups")
+      .update(row)
+      .eq("id", id);
+    if (error) {
+      if (error.code === "23505") {
+        throw new Error(`The slug "${slug}" is already used by another group`);
+      }
+      throw new Error(error.message);
+    }
+  } else {
+    const { data, error } = await supabase
+      .from("mbc_service_groups")
+      .insert(row)
+      .select("id")
+      .single();
+    if (error) {
+      if (error.code === "23505") {
+        throw new Error(`The slug "${slug}" is already used by another group`);
+      }
+      throw new Error(error.message);
+    }
+    groupId = data.id;
+  }
 
-  if (error) throw new Error(error.message);
-  revalidatePath("/services");
-  revalidateSitePath("/services");
+  // Same replace-the-whole-list approach as the point system: the textarea is
+  // the source of truth, so ordering and removals need no per-row bookkeeping.
+  const { error: deleteError } = await supabase
+    .from("mbc_services")
+    .delete()
+    .eq("group_id", groupId);
+  if (deleteError) throw new Error(deleteError.message);
+
+  const { error: insertError } = await supabase.from("mbc_services").insert(
+    items.map((item) => ({
+      ...item,
+      group_id: groupId,
+      // `category` predates groups and is still NOT NULL — keep it mirroring
+      // the group title so the column stays meaningful.
+      category: title,
+    }))
+  );
+  if (insertError) throw new Error(insertError.message);
+
+  revalidateEverywhere();
 }
 
-export async function deleteService(id: string) {
+export async function deleteServiceGroup(id: string) {
   await requireAdmin();
   const supabase = createAdminClient();
 
-  const { error } = await supabase.from("mbc_services").delete().eq("id", id);
+  // mbc_services.group_id is ON DELETE CASCADE, so the lines go with it.
+  const { error } = await supabase
+    .from("mbc_service_groups")
+    .delete()
+    .eq("id", id);
   if (error) throw new Error(error.message);
 
-  revalidatePath("/services");
-  revalidateSitePath("/services");
+  revalidateEverywhere();
 }

@@ -14,6 +14,12 @@ function generateTempPassword(): string {
   return randomBytes(9).toString("base64url");
 }
 
+/** The public title is just the picked Our Team section(s), joined — no
+ *  separate free-text field to keep in sync with the checkboxes. */
+function titleFromCategories(categories: string[]): string | null {
+  return categories.length > 0 ? categories.join(" & ") : null;
+}
+
 export async function setStaffRole(
   userId: string,
   role: "admin" | "therapist" | null
@@ -93,7 +99,6 @@ export async function addStaffByEmail(
   const fullName = String(formData.get("fullName") ?? "").trim();
   const role = String(formData.get("role") ?? "therapist");
   const portalAccess = formData.get("portalAccess") === "on";
-  const displayRole = String(formData.get("displayRole") ?? "").trim();
   const bio = String(formData.get("bio") ?? "").trim();
   const showOnSite = formData.get("showOnSite") === "on";
   const sortOrder = Number(formData.get("sortOrder") ?? 0);
@@ -149,7 +154,7 @@ export async function addStaffByEmail(
       id: userId,
       full_name: fullName || metadataFullName,
       role,
-      display_role: displayRole || null,
+      display_role: titleFromCategories(teamCategories),
       bio: bio || null,
       show_on_site: showOnSite,
       sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
@@ -174,7 +179,6 @@ export async function updateStaffProfile(formData: FormData) {
 
   const id = String(formData.get("id") ?? "");
   const fullName = String(formData.get("fullName") ?? "").trim();
-  const displayRole = String(formData.get("displayRole") ?? "").trim();
   const bio = String(formData.get("bio") ?? "").trim();
   const showOnSite = formData.get("showOnSite") === "on";
   const sortOrder = Number(formData.get("sortOrder") ?? 0);
@@ -192,7 +196,7 @@ export async function updateStaffProfile(formData: FormData) {
     .from("profiles")
     .update({
       full_name: fullName || null,
-      display_role: displayRole || null,
+      display_role: titleFromCategories(teamCategories),
       bio: bio || null,
       show_on_site: showOnSite,
       sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,

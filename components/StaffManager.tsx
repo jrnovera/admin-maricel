@@ -9,6 +9,7 @@ import {
   updateStaffProfile,
 } from "@/app/(dashboard)/staff/actions";
 import { TEAM_CATEGORIES } from "@/lib/types";
+import Modal from "@/components/Modal";
 
 const field =
   "w-full rounded-lg border border-black/10 bg-white px-3 py-2.5 text-sm outline-none focus:border-pink-400 disabled:bg-pink-50/50";
@@ -136,26 +137,15 @@ function ProfileFields({
         </label>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className={label}>PUBLIC TITLE (e.g. Massage Therapist)</label>
-          <input
-            name="displayRole"
-            defaultValue={defaults?.display_role ?? ""}
-            disabled={pending}
-            className={field}
-          />
-        </div>
-        <div>
-          <label className={label}>SORT ORDER</label>
-          <input
-            name="sortOrder"
-            type="number"
-            defaultValue={defaults?.sort_order ?? 0}
-            disabled={pending}
-            className={field}
-          />
-        </div>
+      <div>
+        <label className={label}>SORT ORDER</label>
+        <input
+          name="sortOrder"
+          type="number"
+          defaultValue={defaults?.sort_order ?? 0}
+          disabled={pending}
+          className={field}
+        />
       </div>
 
       <div>
@@ -194,7 +184,8 @@ function ProfileFields({
         <p className="mt-1.5 text-xs text-ink-500">
           Which group(s) they&apos;re listed under on the Our Team page — e.g. a
           nail tech who also does massage can be both Beauty Specialist and
-          Therapist.
+          Therapist. This also becomes their public title, so no separate one
+          to type in.
         </p>
       </div>
 
@@ -240,7 +231,7 @@ function EditProfileForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="col-span-full space-y-4 rounded-xl border border-black/10 bg-blush-50/40 p-5"
+      className="space-y-4 rounded-xl bg-white p-5"
     >
       <div className="flex items-center justify-between">
         <h3 className="font-display text-base text-ink-900">
@@ -306,6 +297,7 @@ export default function StaffManager({
     password: string;
   } | null>(null);
   const [pending, startTransition] = useTransition();
+  const editingStaff = staff.find((s) => s.id === editingId) ?? null;
 
   function handleAdd(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -374,75 +366,77 @@ export default function StaffManager({
       )}
 
       {adding && (
-        <form
-          onSubmit={handleAdd}
-          className="mb-6 space-y-4 rounded-xl border border-black/10 bg-white p-5"
-        >
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-lg text-ink-900">Add Staff Member</h2>
-            <button type="button" onClick={() => setAdding(false)} className="text-ink-500">
-              <X size={18} />
-            </button>
-          </div>
-
-          <p className="rounded-lg bg-blush-50 px-3 py-2 text-xs text-ink-500">
-            By default this just adds them to the public Our Team page — no
-            portal login. Check the box below only if they also need to sign
-            in here.
-          </p>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="sm:col-span-2">
-              <label className={label}>EMAIL</label>
-              <input name="email" type="email" required disabled={pending} className={field} />
-            </div>
-            <div>
-              <label className={label}>ROLE</label>
-              <select name="role" defaultValue="therapist" disabled={pending} className={field}>
-                <option value="therapist">Therapist</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className={label}>FULL NAME (OPTIONAL)</label>
-            <input name="fullName" disabled={pending} className={field} />
-          </div>
-
-          <label className="flex items-start gap-2 text-sm text-ink-700">
-            <input
-              type="checkbox"
-              name="portalAccess"
-              disabled={pending}
-              className="mt-0.5 h-4 w-4 accent-pink-500"
-            />
-            <span>
-              Give them portal login access
-              <span className="block text-xs font-normal text-ink-500">
-                Leave unchecked for a Team-page-only profile with no way to
-                sign in.
-              </span>
-            </span>
-          </label>
-
-          <div className="border-t border-black/[0.06] pt-4">
-            <p className="mb-3 text-xs font-semibold tracking-[0.1em] text-ink-500">
-              PUBLIC OUR TEAM PROFILE (OPTIONAL)
-            </p>
-            <div className="space-y-4">
-              <ProfileFields pending={pending} />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-full bg-pink-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-pink-600 disabled:opacity-60"
+        <Modal maxWidth="max-w-2xl" onClose={() => setAdding(false)}>
+          <form
+            onSubmit={handleAdd}
+            className="space-y-4 rounded-xl bg-white p-5"
           >
-            {pending ? "ADDING…" : "Add Staff"}
-          </button>
-        </form>
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-lg text-ink-900">Add Staff Member</h2>
+              <button type="button" onClick={() => setAdding(false)} className="text-ink-500">
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="rounded-lg bg-blush-50 px-3 py-2 text-xs text-ink-500">
+              By default this just adds them to the public Our Team page — no
+              portal login. Check the box below only if they also need to sign
+              in here.
+            </p>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="sm:col-span-2">
+                <label className={label}>EMAIL</label>
+                <input name="email" type="email" required disabled={pending} className={field} />
+              </div>
+              <div>
+                <label className={label}>ROLE</label>
+                <select name="role" defaultValue="therapist" disabled={pending} className={field}>
+                  <option value="therapist">Therapist</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className={label}>FULL NAME (OPTIONAL)</label>
+              <input name="fullName" disabled={pending} className={field} />
+            </div>
+
+            <label className="flex items-start gap-2 text-sm text-ink-700">
+              <input
+                type="checkbox"
+                name="portalAccess"
+                disabled={pending}
+                className="mt-0.5 h-4 w-4 accent-pink-500"
+              />
+              <span>
+                Give them portal login access
+                <span className="block text-xs font-normal text-ink-500">
+                  Leave unchecked for a Team-page-only profile with no way to
+                  sign in.
+                </span>
+              </span>
+            </label>
+
+            <div className="border-t border-black/[0.06] pt-4">
+              <p className="mb-3 text-xs font-semibold tracking-[0.1em] text-ink-500">
+                PUBLIC OUR TEAM PROFILE (OPTIONAL)
+              </p>
+              <div className="space-y-4">
+                <ProfileFields pending={pending} />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={pending}
+              className="rounded-full bg-pink-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-pink-600 disabled:opacity-60"
+            >
+              {pending ? "ADDING…" : "Add Staff"}
+            </button>
+          </form>
+        </Modal>
       )}
 
       <div className="overflow-x-auto card-premium">
@@ -569,16 +563,6 @@ export default function StaffManager({
                       </span>
                     </td>
                   </tr>
-                  {editingId === s.id && (
-                    <tr>
-                      <td colSpan={7} className="bg-black/[0.015] p-4">
-                        <EditProfileForm
-                          staff={s}
-                          onDone={() => setEditingId(null)}
-                        />
-                      </td>
-                    </tr>
-                  )}
                 </Fragment>
               );
             })}
@@ -591,6 +575,12 @@ export default function StaffManager({
           </p>
         )}
       </div>
+
+      {editingStaff && (
+        <Modal maxWidth="max-w-2xl" onClose={() => setEditingId(null)}>
+          <EditProfileForm staff={editingStaff} onDone={() => setEditingId(null)} />
+        </Modal>
+      )}
     </div>
   );
 }

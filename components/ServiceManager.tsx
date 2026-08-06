@@ -2,19 +2,38 @@
 
 import { useState, useTransition } from "react";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
-import { saveService, deleteService } from "@/app/(dashboard)/services/actions";
-import { SERVICE_CATEGORIES, type MbcService } from "@/lib/types";
+import {
+  saveServiceGroup,
+  deleteServiceGroup,
+} from "@/app/(dashboard)/services/actions";
+import { PACKAGE_ICONS, type MbcServiceGroup } from "@/lib/types";
 import Modal from "@/components/Modal";
 
 const field =
   "w-full rounded-lg border border-black/10 bg-white px-3 py-2.5 text-sm outline-none transition-colors focus:border-pink-400 disabled:bg-pink-50/50";
 const label = "mb-1.5 block text-xs font-semibold tracking-[0.1em] text-ink-900";
 
-function ServiceForm({
-  service,
+/** A bare number round-trips as a plain price; a label ("From AED 25") is kept verbatim. */
+function priceText(item: MbcServiceGroup["mbc_services"][number]) {
+  return item.price_label ?? String(Number(item.price));
+}
+
+function itemsToText(group: MbcServiceGroup | null) {
+  if (!group) return "";
+  return group.mbc_services
+    .slice()
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((i) => `${i.name} | ${priceText(i)}`)
+    .join("\n");
+}
+
+function GroupForm({
+  group,
+  nextSortOrder,
   onDone,
 }: {
-  service: MbcService | null;
+  group: MbcServiceGroup | null;
+  nextSortOrder: number;
   onDone: () => void;
 }) {
   const [pending, startTransition] = useTransition();
@@ -27,10 +46,10 @@ function ServiceForm({
 
     startTransition(async () => {
       try {
-        await saveService(formData);
+        await saveServiceGroup(formData);
         onDone();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not save service");
+        setError(err instanceof Error ? err.message : "Could not save group");
       }
     });
   }
@@ -42,7 +61,7 @@ function ServiceForm({
     >
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg text-ink-900">
-          {service ? "Edit Service" : "New Service"}
+          {group ? "Edit Service Group" : "New Service Group"}
         </h2>
         <button type="button" onClick={onDone} className="text-ink-500">
           <X size={18} />
@@ -50,213 +69,257 @@ function ServiceForm({
       </div>
 
       {error && (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="whitespace-pre-line rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
         </p>
       )}
 
-      {service && <input type="hidden" name="id" value={service.id} />}
+      {group && <input type="hidden" name="id" value={group.id} />}
+      {group && <input type="hidden" name="slug" value={group.slug} />}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className={label}>NAME</label>
-          <input name="name" required defaultValue={service?.name ?? ""} disabled={pending} className={field} />
+          <label className={label}>TITLE</label>
+          <input
+            name="title"
+            required
+            defaultValue={group?.title ?? ""}
+            placeholder="e.g. Nail Services"
+            disabled={pending}
+            className={field}
+          />
         </div>
         <div>
-          <label className={label}>CATEGORY</label>
+          <label className={label}>ICON</label>
           <select
-            name="category"
+            name="icon"
             required
-            defaultValue={service?.category ?? ""}
+            defaultValue={group?.icon ?? "sparkle"}
             disabled={pending}
             className={field}
           >
-            <option value="" disabled>Choose…</option>
-            {SERVICE_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+            {PACKAGE_ICONS.map((i) => (
+              <option key={i} value={i}>
+                {i}
+              </option>
+            ))}
           </select>
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div>
-          <label className={label}>PRICE (AED)</label>
-          <input
-            name="price"
-            type="number"
-            step="0.01"
-            min="0"
-            required
-            defaultValue={service?.price ?? ""}
-            disabled={pending}
-            className={field}
-          />
-        </div>
-        <div>
-          <label className={label}>DURATION (MIN)</label>
-          <input
-            name="durationMinutes"
-            type="number"
-            min="10"
-            step="5"
-            defaultValue={service?.duration_minutes ?? 60}
-            disabled={pending}
-            className={field}
-          />
-        </div>
-        <div>
-          <label className={label}>SORT ORDER</label>
-          <input
-            name="sortOrder"
-            type="number"
-            defaultValue={service?.sort_order ?? 0}
-            disabled={pending}
-            className={field}
-          />
-        </div>
+      <div>
+        <label className={label}>
+          SERVICES (ONE PER LINE — &quot;SERVICE NAME | PRICE&quot;)
+        </label>
+        <textarea
+          name="itemsText"
+          required
+          rows={12}
+          defaultValue={itemsToText(group)}
+          placeholder={"Manicure Express | 40\nGel Polish Hands or Feet | 40\nNail Art | From AED 25"}
+          disabled={pending}
+          className={`${field} font-mono text-xs leading-relaxed`}
+        />
+        <p className="mt-1 text-xs text-ink-500">
+          A plain number shows as &quot;AED 40&quot;. Write it out in full to
+          show something else, e.g. &quot;From AED 25&quot;. Order here sets the
+          display order, and saving replaces the whole list for this group.
+        </p>
       </div>
 
       <div>
-        <label className={label}>PRICE LABEL (OPTIONAL)</label>
+        <label className={label}>BLURB (SHOWN ON THE HOME PAGE GRID)</label>
         <input
-          name="priceLabel"
-          defaultValue={service?.price_label ?? ""}
-          placeholder='e.g. "From AED 25" — leave blank for a fixed price'
+          name="blurb"
+          defaultValue={group?.blurb ?? ""}
+          placeholder="e.g. Manicure, Pedicure, Extensions & Nail Art"
           disabled={pending}
           className={field}
         />
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-ink-700">
+      <div>
+        <label className={label}>NOTE (OPTIONAL FOOTNOTE)</label>
         <input
-          type="checkbox"
-          name="isActive"
-          defaultChecked={service?.is_active ?? true}
+          name="note"
+          defaultValue={group?.note ?? ""}
+          placeholder="e.g. Using EVO, OPI, ESSIE, and ORLY."
           disabled={pending}
-          className="h-4 w-4 accent-pink-500"
+          className={field}
         />
-        Show on the public site
-      </label>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className={label}>SORT ORDER</label>
+          <input
+            name="sortOrder"
+            type="number"
+            defaultValue={group?.sort_order ?? nextSortOrder}
+            disabled={pending}
+            className={field}
+          />
+        </div>
+        <label className="flex items-center gap-2 self-end pb-2.5 text-sm text-ink-700">
+          <input
+            type="checkbox"
+            name="isActive"
+            defaultChecked={group?.is_active ?? true}
+            disabled={pending}
+            className="h-4 w-4 accent-pink-500"
+          />
+          Show on the public site
+        </label>
+      </div>
 
       <button
         type="submit"
         disabled={pending}
         className="rounded-full bg-pink-500 px-6 py-2.5 text-sm font-medium text-white hover:bg-pink-600 disabled:opacity-60"
       >
-        {pending ? "SAVING…" : "Save Service"}
+        {pending ? "SAVING…" : "Save Group"}
       </button>
     </form>
   );
 }
 
-export default function ServiceManager({ services }: { services: MbcService[] }) {
-  const [editing, setEditing] = useState<MbcService | null>(null);
+export default function ServiceManager({
+  groups,
+}: {
+  groups: MbcServiceGroup[];
+}) {
+  const [editing, setEditing] = useState<MbcServiceGroup | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const byCategory = services.reduce<Record<string, MbcService[]>>((acc, s) => {
-    (acc[s.category] ??= []).push(s);
-    return acc;
-  }, {});
-
-  const closeForm = () => {
-    setCreating(false);
-    setEditing(null);
-  };
-
   return (
     <div>
-      <button
-        onClick={() => setCreating(true)}
-        className="mb-6 flex items-center gap-2 rounded-full bg-pink-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-pink-600"
-      >
-        <Plus size={16} /> New Service
-      </button>
+      {!creating && !editing && (
+        <button
+          onClick={() => setCreating(true)}
+          className="mb-6 flex items-center gap-2 rounded-full bg-pink-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-pink-600"
+        >
+          <Plus size={16} /> New Service Group
+        </button>
+      )}
 
       {(creating || editing) && (
-        <Modal onClose={closeForm}>
-          <ServiceForm service={editing} onDone={closeForm} />
+        <Modal
+          maxWidth="max-w-2xl"
+          onClose={() => {
+            setCreating(false);
+            setEditing(null);
+          }}
+        >
+          <GroupForm
+            group={editing}
+            nextSortOrder={Math.max(0, ...groups.map((g) => g.sort_order)) + 1}
+            onDone={() => {
+              setCreating(false);
+              setEditing(null);
+            }}
+          />
         </Modal>
       )}
 
-      {Object.entries(byCategory).map(([category, items]) => (
-        <div key={category} className="mb-6">
-          <h2 className="mb-2 text-sm font-semibold text-pink-500">{category}</h2>
-          <div className="overflow-hidden card-premium">
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-pink-50">
-                {items.map((s) => (
-                  <tr key={s.id} className={s.is_active ? "" : "opacity-50"}>
-                    <td className="px-4 py-3">
-                      {s.name}
-                      {!s.is_active && (
-                        <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600">
-                          Hidden
-                        </span>
-                      )}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right font-medium">
-                      {s.price_label ?? `AED ${Number(s.price).toLocaleString()}`}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right text-xs text-ink-500">
-                      {s.duration_minutes} min
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right">
-                      {confirmId === s.id ? (
-                        <span className="flex items-center justify-end gap-2 text-xs">
-                          <span className="text-ink-500">Delete?</span>
-                          <button
-                            disabled={pending}
-                            onClick={() =>
-                              startTransition(async () => {
-                                await deleteService(s.id);
-                                setConfirmId(null);
-                              })
-                            }
-                            className="font-medium text-red-600 hover:text-red-800"
-                          >
-                            Yes
-                          </button>
-                          <button
-                            onClick={() => setConfirmId(null)}
-                            className="text-ink-500"
-                          >
-                            No
-                          </button>
-                        </span>
-                      ) : (
-                        <span className="flex items-center justify-end gap-3">
-                          <button
-                            onClick={() => {
-                              setCreating(false);
-                              setEditing(s);
-                            }}
-                            className="text-ink-500 hover:text-pink-500"
-                            title={`Edit ${s.name}`}
-                          >
-                            <Pencil size={15} />
-                          </button>
-                          <button
-                            onClick={() => setConfirmId(s.id)}
-                            className="text-red-500 hover:text-red-700"
-                            title={`Delete ${s.name}`}
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ))}
+      <div className="space-y-3">
+        {groups.map((g) => {
+          const items = g.mbc_services
+            .slice()
+            .sort((a, b) => a.sort_order - b.sort_order);
 
-      {services.length === 0 && (
+          return (
+            <div
+              key={g.id}
+              className={`card-premium p-4 ${g.is_active ? "" : "opacity-50"}`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-medium text-ink-900">
+                    {g.title}
+                    {!g.is_active && (
+                      <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-600">
+                        Hidden
+                      </span>
+                    )}
+                  </p>
+                  <p className="mt-0.5 text-xs text-ink-500">
+                    {items.length} service{items.length === 1 ? "" : "s"}
+                  </p>
+                </div>
+
+                {confirmId === g.id ? (
+                  <span className="flex shrink-0 items-center gap-2 text-xs">
+                    <span className="text-ink-500">Delete?</span>
+                    <button
+                      disabled={pending}
+                      onClick={() =>
+                        startTransition(async () => {
+                          await deleteServiceGroup(g.id);
+                          setConfirmId(null);
+                        })
+                      }
+                      className="font-medium text-red-600 hover:text-red-800"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      onClick={() => setConfirmId(null)}
+                      className="text-ink-500"
+                    >
+                      No
+                    </button>
+                  </span>
+                ) : (
+                  <span className="flex shrink-0 items-center gap-3">
+                    <button
+                      onClick={() => {
+                        setCreating(false);
+                        setEditing(g);
+                      }}
+                      className="text-ink-500 hover:text-pink-500"
+                      title={`Edit ${g.title}`}
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button
+                      onClick={() => setConfirmId(g.id)}
+                      className="text-red-500 hover:text-red-700"
+                      title={`Delete ${g.title}`}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </span>
+                )}
+              </div>
+
+              {items.length > 0 && (
+                <ul className="mt-3 grid gap-x-8 gap-y-1 border-t border-pink-50 pt-3 text-xs sm:grid-cols-2">
+                  {items.map((item) => (
+                    <li
+                      key={item.id}
+                      className={`flex items-baseline justify-between gap-3 ${
+                        item.is_active ? "" : "opacity-50"
+                      }`}
+                    >
+                      <span className="text-ink-700">{item.name}</span>
+                      <span className="shrink-0 font-medium text-ink-900">
+                        {item.price_label ??
+                          `AED ${Number(item.price).toLocaleString()}`}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {groups.length === 0 && (
         <p className="card-premium px-6 py-12 text-center text-sm text-ink-500">
-          No services yet.
+          No service groups yet.
         </p>
       )}
     </div>

@@ -1,12 +1,28 @@
-export type MbcService = {
+/** One priced line inside a service group — a row of `mbc_services`. */
+export type MbcServiceItem = {
   id: string;
-  category: string;
   name: string;
   price: number;
   price_label: string | null;
-  duration_minutes: number;
   sort_order: number;
   is_active: boolean;
+};
+
+/**
+ * A price-list card on the public /services page, with its lines. Groups
+ * replaced the old free-text `category` column: the public site reads these
+ * straight through, so the salon's price list is fully staff-editable.
+ */
+export type MbcServiceGroup = {
+  id: string;
+  slug: string;
+  title: string;
+  icon: string;
+  blurb: string | null;
+  note: string | null;
+  sort_order: number;
+  is_active: boolean;
+  mbc_services: MbcServiceItem[];
 };
 
 export type Enquiry = {
@@ -94,16 +110,6 @@ export const TEAM_CATEGORIES = [
   "Support Team",
   "Admin",
 ] as const;
-
-export const SERVICE_CATEGORIES = [
-  "Hair Services",
-  "Nail Care",
-  "Skin Care / Facials",
-  "Brows & Lashes",
-  "Waxing",
-  "Makeup & Styling",
-  "Body & Massage",
-];
 
 export type MbcPackage = {
   id: string;
