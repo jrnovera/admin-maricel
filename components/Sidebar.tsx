@@ -140,7 +140,7 @@ export default function Sidebar({
     <>
       {/* Mobile / tablet bar */}
       <div className="glass-sidebar sticky top-0 z-40 flex items-center justify-between px-4 py-3 text-white lg:hidden">
-        <Logo variant="white" className="h-6 w-auto" />
+        <Logo variant="white" className="h-9 w-auto" />
         <div className="flex items-center gap-1">
           <NotificationBell unreadCount={unreadCount} />
           <button onClick={() => setOpen((o) => !o)} aria-label="Toggle menu">
@@ -162,7 +162,7 @@ export default function Sidebar({
             this dark glass, so no plate is needed to prop it up. */}
         <div className="mb-8 flex items-start justify-between">
           <div>
-            <Logo variant="white" className="h-8 w-auto" />
+            <Logo variant="white" className="h-12 w-auto" />
             <p className="mt-2.5 text-[8px] tracking-[0.18em] text-white/40">
               STAFF PORTAL
             </p>

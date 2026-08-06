@@ -1,9 +1,10 @@
 "use client";
 
 import { Fragment, useState, useTransition } from "react";
-import { UserPlus, X, Pencil, Upload } from "lucide-react";
+import { UserPlus, X, Pencil, Upload, Copy, Check } from "lucide-react";
 import {
   setStaffRole,
+  setPortalAccess,
   addStaffByEmail,
   updateStaffProfile,
 } from "@/app/(dashboard)/staff/actions";
@@ -24,7 +25,66 @@ export type StaffRow = {
   show_on_site: boolean;
   sort_order: number;
   team_categories: string[];
+  /** Whether this account can actually sign in to the portal — separate
+   *  from `role`, since a Team-page-only profile keeps a role but is banned
+   *  at the Auth layer so it can never log in. */
+  canLogin: boolean;
 };
+
+/** One-time reveal of an auto-generated password right after account
+ *  creation — this is the only place it's ever shown, so the admin needs to
+ *  copy and hand it off before dismissing. */
+function NewAccountBanner({
+  account,
+  onDismiss,
+}: {
+  account: { email: string; password: string };
+  onDismiss: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  function copy() {
+    navigator.clipboard.writeText(account.password);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-emerald-900">
+            Account created for {account.email}
+          </p>
+          <p className="mt-1 text-xs text-emerald-800">
+            This password only shows once — copy it and share it with them
+            now. They can sign in right away.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="shrink-0 text-emerald-700 hover:text-emerald-900"
+        >
+          <X size={16} />
+        </button>
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <code className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm text-emerald-900">
+          {account.password}
+        </code>
+        <button
+          type="button"
+          onClick={copy}
+          className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700"
+        >
+          {copied ? <Check size={13} /> : <Copy size={13} />}
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /** Shared photo/title/bio/visibility fields used by both the add and edit forms. */
 function ProfileFields({
@@ -241,19 +301,26 @@ export default function StaffManager({
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [newAccount, setNewAccount] = useState<{
+    email: string;
+    password: string;
+  } | null>(null);
   const [pending, startTransition] = useTransition();
 
   function handleAdd(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
+    setNewAccount(null);
     const form = e.currentTarget;
     const formData = new FormData(form);
+    const email = String(formData.get("email") ?? "");
 
     startTransition(async () => {
       try {
-        await addStaffByEmail(formData);
+        const { tempPassword } = await addStaffByEmail(formData);
         form.reset();
         setAdding(false);
+        if (tempPassword) setNewAccount({ email, password: tempPassword });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not add staff");
       }
@@ -271,12 +338,30 @@ export default function StaffManager({
     });
   }
 
+  function toggleLogin(id: string, canLogin: boolean) {
+    setError("");
+    startTransition(async () => {
+      try {
+        await setPortalAccess(id, canLogin);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not update login access");
+      }
+    });
+  }
+
   return (
     <div>
       {error && (
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </p>
+      )}
+
+      {newAccount && (
+        <NewAccountBanner
+          account={newAccount}
+          onDismiss={() => setNewAccount(null)}
+        />
       )}
 
       {!adding && (
@@ -301,8 +386,9 @@ export default function StaffManager({
           </div>
 
           <p className="rounded-lg bg-blush-50 px-3 py-2 text-xs text-ink-500">
-            They need an account first — ask them to sign up, then grant access here.
-            No password is handled in this portal.
+            By default this just adds them to the public Our Team page — no
+            portal login. Check the box below only if they also need to sign
+            in here.
           </p>
 
           <div className="grid gap-4 sm:grid-cols-3">
@@ -323,6 +409,22 @@ export default function StaffManager({
             <label className={label}>FULL NAME (OPTIONAL)</label>
             <input name="fullName" disabled={pending} className={field} />
           </div>
+
+          <label className="flex items-start gap-2 text-sm text-ink-700">
+            <input
+              type="checkbox"
+              name="portalAccess"
+              disabled={pending}
+              className="mt-0.5 h-4 w-4 accent-pink-500"
+            />
+            <span>
+              Give them portal login access
+              <span className="block text-xs font-normal text-ink-500">
+                Leave unchecked for a Team-page-only profile with no way to
+                sign in.
+              </span>
+            </span>
+          </label>
 
           <div className="border-t border-black/[0.06] pt-4">
             <p className="mb-3 text-xs font-semibold tracking-[0.1em] text-ink-500">
@@ -350,6 +452,7 @@ export default function StaffManager({
               <th className="px-4 py-3 font-semibold">NAME</th>
               <th className="px-4 py-3 font-semibold">EMAIL</th>
               <th className="px-4 py-3 font-semibold">ROLE</th>
+              <th className="px-4 py-3 font-semibold">LOGIN</th>
               <th className="px-4 py-3 font-semibold">TEAM SECTION(S)</th>
               <th className="px-4 py-3 font-semibold">ON SITE</th>
               <th className="px-4 py-3 text-right font-semibold">ACTIONS</th>
@@ -392,6 +495,27 @@ export default function StaffManager({
                         <option value="therapist">Therapist</option>
                         <option value="admin">Admin</option>
                       </select>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        disabled={pending || isSelf}
+                        onClick={() => toggleLogin(s.id, !s.canLogin)}
+                        title={
+                          isSelf
+                            ? "You can't disable your own login"
+                            : s.canLogin
+                              ? "Click to disable portal login"
+                              : "Click to enable portal login"
+                        }
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium disabled:opacity-60 ${
+                          s.canLogin
+                            ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            : "bg-black/[0.04] text-ink-500 hover:bg-black/[0.08]"
+                        }`}
+                      >
+                        {s.canLogin ? "Enabled" : "Disabled"}
+                      </button>
                     </td>
                     <td className="px-4 py-3">
                       {s.team_categories.length > 0 ? (
@@ -447,7 +571,7 @@ export default function StaffManager({
                   </tr>
                   {editingId === s.id && (
                     <tr>
-                      <td colSpan={6} className="bg-black/[0.015] p-4">
+                      <td colSpan={7} className="bg-black/[0.015] p-4">
                         <EditProfileForm
                           staff={s}
                           onDone={() => setEditingId(null)}

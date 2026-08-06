@@ -20,24 +20,32 @@ export default async function StaffPage() {
     ? TABLE_MISSING.has(error.code) || COLUMN_MISSING.has(error.code)
     : false;
 
-  // Emails live in auth.users, not the profile row — join them here.
+  // Emails (and login-ban state) live in auth.users, not the profile row —
+  // join them here.
   let staff: StaffRow[] = [];
   if (profiles?.length) {
     const { data: list } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-    const emailById = new Map(list?.users.map((u) => [u.id, u.email ?? ""]) ?? []);
+    const usersById = new Map(list?.users.map((u) => [u.id, u]) ?? []);
 
-    staff = profiles.map((p) => ({
-      id: p.id,
-      email: emailById.get(p.id) ?? "—",
-      full_name: p.full_name,
-      role: p.role as "admin" | "therapist",
-      photo_url: p.photo_url,
-      display_role: p.display_role,
-      bio: p.bio,
-      show_on_site: p.show_on_site ?? false,
-      sort_order: p.sort_order ?? 0,
-      team_categories: (p.team_categories as string[] | null) ?? [],
-    }));
+    staff = profiles.map((p) => {
+      const authUser = usersById.get(p.id);
+      const bannedUntil = authUser?.banned_until;
+      const canLogin = !bannedUntil || new Date(bannedUntil) <= new Date();
+
+      return {
+        id: p.id,
+        email: authUser?.email ?? "—",
+        full_name: p.full_name,
+        role: p.role as "admin" | "therapist",
+        photo_url: p.photo_url,
+        display_role: p.display_role,
+        bio: p.bio,
+        show_on_site: p.show_on_site ?? false,
+        sort_order: p.sort_order ?? 0,
+        team_categories: (p.team_categories as string[] | null) ?? [],
+        canLogin,
+      };
+    });
   }
 
   return (
