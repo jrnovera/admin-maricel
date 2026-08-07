@@ -159,6 +159,17 @@ export type MbcPointGroup = {
   mbc_point_items: MbcPointItem[];
 };
 
+export type MbcReview = {
+  id: string;
+  name: string;
+  role: string | null;
+  quote: string;
+  rating: number;
+  image: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
+
 export type MbcRedemptionTier = {
   id: string;
   price: string;
