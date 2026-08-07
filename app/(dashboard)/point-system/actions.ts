@@ -13,26 +13,12 @@ function slugify(value: string) {
     .slice(0, 80);
 }
 
-/** Each line is "Item name | points" — the last "|" splits name from points. */
-function parseItems(text: string) {
-  return text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line, i) => {
-      const idx = line.lastIndexOf("|");
-      if (idx === -1) {
-        throw new Error(`Line "${line}" is missing a "|" before the points value`);
-      }
-      const name = line.slice(0, idx).trim();
-      const points = parseFloat(line.slice(idx + 1).trim());
-      if (!name) throw new Error(`Line "${line}" is missing an item name`);
-      if (Number.isNaN(points)) throw new Error(`Line "${line}" has an invalid points value`);
-      return { name, points, sort_order: i + 1 };
-    });
+function touchSite() {
+  revalidatePath("/point-system");
+  revalidateSitePath("/services/point-system");
 }
 
-export async function savePointGroup(formData: FormData) {
+export async function saveGroupMeta(formData: FormData) {
   await requireAdmin();
   const supabase = createAdminClient();
 
@@ -45,15 +31,12 @@ export async function savePointGroup(formData: FormData) {
   const note = get("note") || null;
   const sortOrder = parseInt(get("sortOrder") || "0", 10);
   const isActive = formData.get("isActive") === "on";
-  const items = parseItems(get("itemsText"));
 
   if (!title) throw new Error("Title is required");
   if (!slug) throw new Error("Could not build a URL slug from that title");
-  if (items.length === 0) throw new Error("List at least one point item");
 
   const row = { slug, title, icon, note, sort_order: sortOrder, is_active: isActive };
 
-  let groupId = id;
   if (id) {
     const { error } = await supabase.from("mbc_point_groups").update(row).eq("id", id);
     if (error) {
@@ -62,34 +45,24 @@ export async function savePointGroup(formData: FormData) {
       }
       throw new Error(error.message);
     }
-  } else {
-    const { data, error } = await supabase
-      .from("mbc_point_groups")
-      .insert(row)
-      .select("id")
-      .single();
-    if (error) {
-      if (error.code === "23505") {
-        throw new Error(`The slug "${slug}" is already used by another group`);
-      }
-      throw new Error(error.message);
-    }
-    groupId = data.id;
+    touchSite();
+    return id;
   }
 
-  const { error: deleteError } = await supabase
-    .from("mbc_point_items")
-    .delete()
-    .eq("group_id", groupId);
-  if (deleteError) throw new Error(deleteError.message);
+  const { data, error } = await supabase
+    .from("mbc_point_groups")
+    .insert(row)
+    .select("id")
+    .single();
+  if (error) {
+    if (error.code === "23505") {
+      throw new Error(`The slug "${slug}" is already used by another group`);
+    }
+    throw new Error(error.message);
+  }
 
-  const { error: insertError } = await supabase
-    .from("mbc_point_items")
-    .insert(items.map((item) => ({ ...item, group_id: groupId })));
-  if (insertError) throw new Error(insertError.message);
-
-  revalidatePath("/point-system");
-  revalidateSitePath("/services/point-system");
+  touchSite();
+  return data.id as string;
 }
 
 export async function deletePointGroup(id: string) {
@@ -99,8 +72,109 @@ export async function deletePointGroup(id: string) {
   const { error } = await supabase.from("mbc_point_groups").delete().eq("id", id);
   if (error) throw new Error(error.message);
 
-  revalidatePath("/point-system");
-  revalidateSitePath("/services/point-system");
+  touchSite();
+}
+
+export async function addPointItem(groupId: string, name: string, points: number) {
+  await requireAdmin();
+  const supabase = createAdminClient();
+
+  const trimmedName = name.trim();
+  if (!trimmedName) throw new Error("Item name is required");
+  if (!Number.isFinite(points)) throw new Error("Points must be a number");
+
+  const { data: last, error: lastError } = await supabase
+    .from("mbc_point_items")
+    .select("sort_order")
+    .eq("group_id", groupId)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (lastError) throw new Error(lastError.message);
+
+  const { error } = await supabase.from("mbc_point_items").insert({
+    group_id: groupId,
+    name: trimmedName,
+    points,
+    sort_order: (last?.sort_order ?? 0) + 1,
+  });
+  if (error) throw new Error(error.message);
+
+  touchSite();
+}
+
+export async function updatePointItem(id: string, name: string, points: number) {
+  await requireAdmin();
+  const supabase = createAdminClient();
+
+  const trimmedName = name.trim();
+  if (!trimmedName) throw new Error("Item name is required");
+  if (!Number.isFinite(points)) throw new Error("Points must be a number");
+
+  const { error } = await supabase
+    .from("mbc_point_items")
+    .update({ name: trimmedName, points })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  touchSite();
+}
+
+export async function deletePointItem(id: string) {
+  await requireAdmin();
+  const supabase = createAdminClient();
+
+  const { error } = await supabase.from("mbc_point_items").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+
+  touchSite();
+}
+
+/** Swaps sort_order with the adjacent item in the same group. No-op at the edge of the list. */
+export async function reorderPointItem(id: string, direction: "up" | "down") {
+  await requireAdmin();
+  const supabase = createAdminClient();
+
+  const { data: item, error: itemError } = await supabase
+    .from("mbc_point_items")
+    .select("id, group_id, sort_order")
+    .eq("id", id)
+    .single();
+  if (itemError) throw new Error(itemError.message);
+
+  const neighborQuery = supabase
+    .from("mbc_point_items")
+    .select("id, sort_order")
+    .eq("group_id", item.group_id);
+
+  const { data: neighbor, error: neighborError } =
+    direction === "up"
+      ? await neighborQuery
+          .lt("sort_order", item.sort_order)
+          .order("sort_order", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : await neighborQuery
+          .gt("sort_order", item.sort_order)
+          .order("sort_order", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+  if (neighborError) throw new Error(neighborError.message);
+  if (!neighbor) return;
+
+  const { error: e1 } = await supabase
+    .from("mbc_point_items")
+    .update({ sort_order: neighbor.sort_order })
+    .eq("id", item.id);
+  if (e1) throw new Error(e1.message);
+
+  const { error: e2 } = await supabase
+    .from("mbc_point_items")
+    .update({ sort_order: item.sort_order })
+    .eq("id", neighbor.id);
+  if (e2) throw new Error(e2.message);
+
+  touchSite();
 }
 
 export async function saveRedemptionTier(formData: FormData) {
@@ -124,8 +198,7 @@ export async function saveRedemptionTier(formData: FormData) {
     : await supabase.from("mbc_redemption_tiers").insert(row);
 
   if (error) throw new Error(error.message);
-  revalidatePath("/point-system");
-  revalidateSitePath("/services/point-system");
+  touchSite();
 }
 
 export async function deleteRedemptionTier(id: string) {
@@ -135,6 +208,5 @@ export async function deleteRedemptionTier(id: string) {
   const { error } = await supabase.from("mbc_redemption_tiers").delete().eq("id", id);
   if (error) throw new Error(error.message);
 
-  revalidatePath("/point-system");
-  revalidateSitePath("/services/point-system");
+  touchSite();
 }
