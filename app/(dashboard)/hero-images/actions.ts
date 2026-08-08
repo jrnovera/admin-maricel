@@ -7,8 +7,15 @@ import { uploadImage } from "@/lib/upload";
 import { sectionsFor } from "@/lib/content-schema";
 import { revalidateSitePath } from "@/lib/revalidateSite";
 
+// Most page_keys map straight onto their site route; a few live under a
+// nested path and need spelling out here.
+const NESTED_PAGE_PATHS: Record<string, string> = {
+  vouchers: "/services/vouchers",
+};
+
 function publicPath(pageKey: string) {
-  return pageKey === "home" ? "/" : `/${pageKey}`;
+  if (pageKey === "home") return "/";
+  return NESTED_PAGE_PATHS[pageKey] ?? `/${pageKey}`;
 }
 
 /** The position a newly created slide should land at — after every existing

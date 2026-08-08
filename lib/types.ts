@@ -177,6 +177,15 @@ export type MbcRedemptionTier = {
   sort_order: number;
 };
 
+export type MbcFaq = {
+  id: string;
+  page_key: string;
+  question: string;
+  answer: string;
+  sort_order: number;
+  is_active: boolean;
+};
+
 export type HeroImage = {
   id: string;
   page_key: string;
@@ -194,6 +203,7 @@ export const HERO_PAGES = [
   { key: "about", label: "About Us", multi: false },
   { key: "services", label: "Services", multi: false },
   { key: "packages", label: "Packages", multi: false },
+  { key: "vouchers", label: "Gift Vouchers", multi: false },
   // No "book-appointment" entry: the site has no such route. Its copy lives on
   // the Services page ("Ready to book" / "How to book" / "Need help booking").
   { key: "our-team", label: "Our Team", multi: false },
